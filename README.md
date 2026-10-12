@@ -31,6 +31,8 @@ The extension includes English and Turkish interfaces. Supported AI-site control
 
 Masko has no application server. File processing and masking run locally in the browser. The extension requests access to supported AI chat pages so it can show its controls and protect paste flows. You remain in control of sending the resulting prompt; the AI service processes anything you choose to send under that service's terms.
 
+See the [Masko Privacy Policy](https://aydangelenyolcu.github.io/masko-local-data-station/privacy.html) for details about locally processed content, extension storage, and your choices.
+
 Reversible text masking is pseudonymization, not anonymization. Review generated samples and masked text before sharing. Masko cannot protect text typed manually into an AI chat box character by character.
 
 ## Source and license
