@@ -1,8 +1,8 @@
 {
   "repository": "AydanGelenYolcu/masko-local-data-station",
   "source": "dist/masko production build; generated 2026-10-12T22:31:18.009Z",
-  "files": 121,
-  "totalBytes": 21284117,
+  "files": 122,
+  "totalBytes": 21288607,
   "demoGifs": 12,
   "excluded": [
     "context/",

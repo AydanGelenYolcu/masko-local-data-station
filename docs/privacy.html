@@ -28,7 +28,7 @@
 
     <h2>How Masko uses and stores data</h2>
     <p>Masko uses processed content only to provide the feature you invoked, such as masking text, creating a synthetic table sample, deduplicating or transforming a file, or editing a document. Processing happens in the browser on your device.</p>
-    <p>To support reversible masking, Masko stores the local placeholder glossary and your settings in Chrome extension storage. Some interface preferences, such as the position of the in-page controls, are stored in the relevant browser storage. This information is not synced by Masko to a developer server. Glossary entries remain until you remove them, use an available retention setting, clear the extension's data, or uninstall the extension.</p>
+    <p>To support reversible masking, Masko stores the local placeholder glossary and your settings in Chrome extension storage. Some interface preferences, such as the position and collapsed state of in-page controls, are stored in the local storage of the supported chat site where you use them. These preferences are not glossary content. Masko does not sync either kind of information to a developer server. Glossary entries remain until you remove them, use an available retention setting, clear the extension's data, or uninstall the extension. Site-specific interface preferences may remain until you clear that site's browser storage.</p>
     <p>Masko does not collect browsing history, location, keystroke logs, or usage analytics. It does not include remote JavaScript or WebAssembly code.</p>
 
     <h2>Sharing and third parties</h2>
@@ -41,7 +41,7 @@
     <p>If Masko's data practices change, this policy will be updated before a release that changes those practices. The latest version will be available at this URL.</p>
 
     <h2>Contact</h2>
-    <p>For privacy questions or support, open an issue in the <a href="https://github.com/AydanGelenYolcu/masko-local-data-station/issues">Masko GitHub repository</a>.</p>
+    <p>For privacy questions or support, open an issue in the <a href="https://github.com/AydanGelenYolcu/masko-local-data-station/issues">Masko GitHub repository</a>. Do not post personal, financial, health, or other confidential information in a public issue.</p>
   </main>
 </body>
 </html>
