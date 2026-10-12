@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masko — Bulanık eşleme</title>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="fuzzy-panel.css">
+</head>
+<body>
+  <div class="fuzzy-app">
+    <header class="fuzzy-header">
+      <div class="fuzzy-title-group">
+        <h1>Bulanık eşleme ve mutabakat</h1>
+      </div>
+      <div style="font-size:var(--fs-xs); color:var(--ink-muted);">
+        Yazımı birebir tutmayan kayıtları iki liste arasında eşleştirir; dosyalar tarayıcıda kalır.
+      </div>
+    </header>
+
+    <!-- 1. DOSYA YÜKLEME VE AYARLAR KARTI -->
+    <section class="card" id="inputCard">
+      <div class="dual-drop-grid">
+        <!-- TABLO A -->
+        <div class="drop-card" id="dropCardA" tabindex="0" role="button">
+          <h3 id="labelCardA">1. Tabloyu Seç (Tablo A - Kaynak)</h3>
+          <p class="drop-card-sub" id="subCardA">Banka Ekstresi, CRM veya Sipariş Listesi (.xlsx, .csv)</p>
+          <input type="file" id="fileInputA" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+
+        <!-- TABLO B -->
+        <div class="drop-card" id="dropCardB" tabindex="0" role="button">
+          <h3 id="labelCardB">2. Tabloyu Seç (Tablo B - Karşılaştırma)</h3>
+          <p class="drop-card-sub" id="subCardB">Muhasebe, Fatura veya ERP Listesi (.xlsx, .csv)</p>
+          <input type="file" id="fileInputB" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+      </div>
+
+      <!-- SÜTUN VE KURAL EŞLEŞTİRME AYARLARI (İki dosya da seçilince aktifleşir) -->
+      <div class="config-grid" id="configGrid" style="display:none;">
+        <div class="config-item">
+          <label for="selectKeyA">Tablo A Anahtar Sütun</label>
+          <select id="selectKeyA"></select>
+        </div>
+        <div class="config-item">
+          <label for="selectKeyB">Tablo B Anahtar Sütun</label>
+          <select id="selectKeyB"></select>
+        </div>
+        <div class="config-item">
+          <label for="selectAmountA">Tablo A Tutar (Opsiyonel)</label>
+          <select id="selectAmountA">
+            <option value="">-- Tutar Eşleme Yok --</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="selectAmountB">Tablo B Tutar (Opsiyonel)</label>
+          <select id="selectAmountB">
+            <option value="">-- Tutar Eşleme Yok --</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="inputAmountTol">Tutar Toleransı (±TL)</label>
+          <input type="number" id="inputAmountTol" value="1.0" step="0.1" min="0">
+        </div>
+        <div class="config-item">
+          <label for="inputThreshold">Benzerlik Eşiği: <span id="thresholdVal">80%</span></label>
+          <input type="range" id="inputThreshold" min="50" max="100" value="80" style="margin-top:8px;">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+        <button class="btn btn-primary" id="btnRunReconcile" type="button" disabled style="height:40px; padding:0 24px;">
+          Eşleştirmeyi çalıştır
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. MUTABAKAT VE SONUÇ EKRANI -->
+    <section class="card" id="resultCard" style="display:none;">
+      <!-- İSTATİSTİK ÖZETİ -->
+      <div class="stats-grid">
+        <div class="stat-card ok">
+          <span class="stat-label">Eşleşme Başarısı</span>
+          <span class="stat-val" id="statMatchRate">-%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Tam Eşleşen (%100)</span>
+          <span class="stat-val" id="statExactCount">0</span>
+        </div>
+        <div class="stat-card warn">
+          <span class="stat-label">Bulanık Eşleşen (Fuzzy)</span>
+          <span class="stat-val" id="statFuzzyCount">0</span>
+        </div>
+        <div class="stat-card danger">
+          <span class="stat-label">A'da Bulunup B'de Yok</span>
+          <span class="stat-val" id="statUnmatchedA">0</span>
+        </div>
+        <div class="stat-card danger">
+          <span class="stat-label">B'de Bulunup A'da Yok</span>
+          <span class="stat-val" id="statUnmatchedB">0</span>
+        </div>
+      </div>
+
+      <!-- SEKMELER -->
+      <div class="result-tabs">
+        <button class="rtab-btn is-active" data-tab="fuzzy" type="button"><span class="dot dot-warn" aria-hidden="true"></span>Bulanık eşleşenler (<span id="countTabFuzzy">0</span>)</button>
+        <button class="rtab-btn" data-tab="exact" type="button"><span class="dot dot-ok" aria-hidden="true"></span>Tam eşleşenler (<span id="countTabExact">0</span>)</button>
+        <button class="rtab-btn" data-tab="unmatchedA" type="button"><span class="dot dot-danger" aria-hidden="true"></span>Yalnız Tablo A (<span id="countTabA">0</span>)</button>
+        <button class="rtab-btn" data-tab="unmatchedB" type="button"><span class="dot dot-danger" aria-hidden="true"></span>Yalnız Tablo B (<span id="countTabB">0</span>)</button>
+      </div>
+
+      <!-- TABLO ALANI -->
+      <div class="table-wrap">
+        <table id="resultTable">
+          <thead id="resultHead"></thead>
+          <tbody id="resultBody" translate="no"></tbody>
+        </table>
+      </div>
+
+      <!-- DIŞA AKTARMA BUTONLARI -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:12px;">
+        <span style="font-size:var(--fs-xs); color:var(--ink-muted);">
+          Tüm eşleşen kayıtlar tek birleştirilmiş tabloda satır satır hizalanır.
+        </span>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="btnExportCsv" type="button">CSV indir</button>
+          <button class="btn btn-primary" id="btnExportExcel" type="button">Birleştirilmiş Excel indir (.xlsx)</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="../vendor/xlsx.full.min.js"></script>
+  <script src="../csv-io.js"></script>
+  <script src="fuzzy-engine.js"></script>
+  <script src="fuzzy-ui.js"></script>
+</body>
+</html>

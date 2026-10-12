@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Sıfır ağ yedeği: dosya verisi bir gün yine innerHTML'e sızarsa bile
+       <img src=https://...> veya CSS url() dış istek atamasın. Uzantı CSP'si
+       görsel/bağlantı kaynaklarını kısıtlamıyor. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Masko — Veri Tezgâhı</title>
+  <script src="embed.js"></script>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="workbench.css">
+</head>
+<body>
+
+<div class="page">
+  <!-- Topbar / Header (Ana Uzantı ile Birebir Aynı) -->
+  <header class="topbar">
+    <div class="brand">
+      <img src="../icons/masko-logo.png" alt="Masko Logo" class="brand-logo" width="80" height="80">
+      <div>
+        <div class="brand-title-row">
+          <h1>Masko</h1>
+          <span class="brand-subtitle-badge">Veri Tezgâhı</span>
+        </div>
+        <p class="tagline">Excel, CSV ve SQL veri operasyonlarını Python veya bulut gerektirmeden yerel olarak temizleyin, sorgulayın, maskeleyin ve otomatikleştirin.</p>
+      </div>
+    </div>
+    
+    <div class="header-right">
+      <div class="local-badge">
+        <span class="dot" aria-hidden="true"></span>
+        Hiçbir veri dışarı gönderilmez — tüm işlem tarayıcınızda yerel çalışır
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-search-trigger" id="btnOpenPalette" type="button" title="Komut Paletini Aç (Ctrl + K)">
+          Komut ara <kbd>Ctrl + K</kbd>
+        </button>
+        <a href="../index.html" class="btn-topbar-link">← Ana İstasyon</a>
+        <a href="../rehber/index.html" class="btn-topbar-link" target="_blank">Rehber</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Bölümler işe göre adlandırılır. Çalışan eylemi olmayan PDF bölümü gezinmede yok
+       (kalıcı karartma uygulanmadı; bkz. CLAUDE.md §3). PDF işleri ana istasyonda. -->
+  <nav class="mode-tabs" role="tablist" aria-label="Veri Tezgâhı bölümleri">
+    <button class="mode-tab is-active" data-domain="data" role="tab" type="button">Analiz ve sorgu</button>
+    <button class="mode-tab" data-domain="privacy" role="tab" type="button">Gizlilik</button>
+    <button class="mode-tab" data-domain="files" role="tab" type="button">Dönüştür ve onar</button>
+    <button class="mode-tab" data-domain="workflows" role="tab" type="button">Tarifler</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Unified Drag & Drop Zone -->
+    <div class="wb-dropzone" id="wbDropzone">
+      <input type="file" id="wbFileInput" accept=".csv,.xlsx,.xls,.tsv,.json" style="display: none;">
+      <p>CSV, Excel (.xlsx) veya JSON dosyanızı buraya bırakın ya da seçin</p>
+      <span>Dosya tarayıcınızda işlenir; hiçbir yere gönderilmez.</span>
+    </div>
+
+    <!-- Active File Control Bar (.tool-launch) -->
+    <div id="activeFileBar" class="tool-launch" style="display: none;">
+      <div class="tool-launch-copy">
+        <strong id="activeFileName" translate="no">dosya.csv</strong>
+        <span id="activeFileStats">0 satır × 0 sütun</span>
+      </div>
+      <div class="action-row" style="margin: 0; padding: 0;">
+        <button class="run-btn tool-run" id="btnExportActiveClean" type="button">Excel olarak indir</button>
+        <button class="pick-btn" id="btnClearActiveFile" type="button">Dosyayı kapat</button>
+      </div>
+    </div>
+
+    <!-- Uzun işlemlerde ilerleme; yüklemede durdurulabilir -->
+    <div class="wb-durum" id="wbDurum" role="status" aria-live="polite" hidden>
+      <span class="wb-durum-metin" id="wbDurumMetin">İşleniyor…</span>
+      <div class="wb-durum-cubuk" aria-hidden="true"><div class="wb-durum-dolgu" id="wbDurumDolgu"></div></div>
+      <button class="scan-run" id="wbDurumIptal" type="button" hidden>Durdur</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- DOMAIN 1: DATA WORKBENCH (Clean, Profile, SQL) -->
+    <!-- ============================================== -->
+    <section class="wb-section active" id="sec-data">
+      <div class="wb-grid-2">
+        
+        <!-- Profiler & Health Card -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Veri profili</span>
+            <span class="badge-pill accent" id="healthScoreBadge">Skor: —</span>
+          </div>
+          <p class="wb-card-desc">
+            Sütun tiplerini, boşluk oranlarını, baştaki sıfır (leading zero) kayıplarını ve karışık veri tipi risklerini anında analiz eder.
+          </p>
+          <div id="healthAlertsList" style="margin-bottom: 10px;">
+            <p style="color: var(--ink-muted); font-size: 0.83rem;">Henüz dosya yüklenmedi. Yukarıdan bir dosya seçin veya sürükleyin.</p>
+          </div>
+          <div class="action-row">
+            <button class="run-btn tool-run" id="btnRunProfiler" type="button">Tam Profili Görüntüle</button>
+          </div>
+        </div>
+
+        <!-- Data Quality Validator Card -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Kural doğrulama</span>
+            
+          </div>
+          <p class="wb-card-desc">
+            Excel verinize deterministik iş kuralları tanımlayın (Zorunlu alan, TCKN/VKN geçerliliği, benzersiz anahtar, regex). Hatalı ve temiz satırları tek tıkla ayırın.
+          </p>
+          <div class="action-row">
+            <button class="run-btn tool-run" id="btnRunValidator" type="button">Testleri Çalıştır</button>
+            <button class="scan-run" id="btnManageRules" type="button">Kuralları Düzenle</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Local SQL Studio Card -->
+      <div class="wb-card">
+        <div class="wb-card-title">
+          <span>SQL sorgusu</span>
+          
+        </div>
+        <p class="wb-card-desc">
+          Excel veya CSV verinizi doğrudan SQL ile filtreleyin, gruplayın veya JOIN edin. Veri hiçbir sunucuya gitmeden tarayıcı belleğinde işlenir.
+        </p>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <input type="text" id="sqlQueryInput" class="mono-input" placeholder="SELECT * FROM aktif_tablo WHERE tutar > 500 LIMIT 10">
+          <button class="run-btn tool-run" id="btnExecuteSql" type="button">Çalıştır</button>
+        </div>
+        <div class="action-row" style="margin-top: 0; padding-top: 0;">
+          <button class="scan-run" id="btnTplDuplicates" type="button">Mükerrerleri Bul</button>
+          <button class="scan-run" id="btnTplAntiJoin" type="button">Anti-Join Şablonu</button>
+          <button class="scan-run" id="btnTplSummary" type="button">Özet Rapor (Group By)</button>
+          <button class="scan-run" id="btnTplDdl" type="button">CREATE TABLE DDL Üret</button>
+        </div>
+        <div id="sqlResultContainer" style="margin-top: 14px; display: none;">
+          <div class="table-wrapper" id="sqlTableWrapper" translate="no"></div>
+        </div>
+      </div>
+
+      <!-- Sütun Metrikleri Tablosu -->
+      <div class="wb-card">
+        <div class="wb-card-title">
+          <span>Sütun metrikleri</span>
+        </div>
+        <div class="table-wrapper">
+          <table id="columnsMetricsTable">
+            <thead>
+              <tr>
+                <th>Sütun Adı</th>
+                <th>Tip</th>
+                <th>Boşluk (Null)</th>
+                <th>Tekil (Unique)</th>
+                <th>En Sık Değer</th>
+                <th>Min</th>
+                <th>Max</th>
+                <th>Örnek Değerler</th>
+              </tr>
+            </thead>
+            <tbody id="columnsMetricsBody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--ink-muted); padding: 16px;">Henüz analiz edilmiş veri yok.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- DOMAIN 2: PRIVACY LAB (Masking, Safe Share)   -->
+    <!-- ============================================== -->
+    <section class="wb-section" id="sec-privacy">
+      <div class="wb-grid-2">
+        
+        <!-- Safe Share Card -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Paylaşım öncesi denetim</span>
+            
+          </div>
+          <p class="wb-card-desc">
+            Dosyayı şirket dışına veya ortaklara göndermeden önce tarayın. Gizli sayfaları, yorumları, formül açıklarını ve maskelenmemiş kalıntı PII'ları tespit edin.
+          </p>
+          <div id="safeShareResults" style="margin-bottom: 12px;"></div>
+          <div class="action-row">
+            <button class="run-btn reveal-run" id="btnScanSafeShare" type="button">Güvenlik Denetimini Başlat</button>
+          </div>
+        </div>
+
+        <!-- Join-Preserving Masking Card -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>İlişkiyi koruyan maskeleme</span>
+            <span class="badge-pill warn">Tuzlu HMAC</span>
+          </div>
+          <p class="wb-card-desc">
+            Farklı tablolardaki aynı kayıtlar aynı takma adı alır. Maskeli tablolar kendi aralarında güvenle JOIN edilebilir, ilişkisel bütünlük korunur.
+          </p>
+          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <input type="text" id="maskSaltInput" placeholder="Kurumsal Gizli Tuz (Salt Anahtarı)">
+            <button class="run-btn mask-run" id="btnApplyJoinMask" type="button">Maskele</button>
+          </div>
+          <p class="wb-card-desc">
+            Maske Kasası, takma ad ↔ gerçek değer eşlemesini veriden ayrı bir dosyada saklar; maskeli tabloyu daha sonra geri açmanızı sağlar.
+            Parola girerseniz kasa AES-256-GCM ile şifrelenir (parolasız kasa gerçek değerleri düz metin içerir).
+          </p>
+          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <input type="password" id="vaultPassword" placeholder="Kasa parolası (en az 8 karakter, önerilir)" autocomplete="new-password">
+          </div>
+          <div class="action-row">
+            <button class="scan-run" id="btnExportVault" type="button" title="Bu oturumda üretilen takma adların kasasını indirir.">Maske kasasını indir (.maskvault.json)</button>
+            <button class="scan-run" id="btnImportVault" type="button" title="Kasa dosyasıyla aktif tablodaki takma adları gerçek değerlere çevirir.">Kasadan geri aç</button>
+            <input type="file" id="vaultFileInput" accept=".json,application/json" hidden>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- DOMAIN 3: FILES & RESHAPE                     -->
+    <!-- ============================================== -->
+    <section class="wb-section" id="sec-files">
+      <div class="wb-grid-2">
+        
+        <!-- CSV Rescue Mode -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Bozuk CSV onarımı</span>
+            
+          </div>
+          <p class="wb-card-desc">
+            Ayraç uyuşmazlığı, tırnak hataları ve bozuk satırları onarır. Baştaki sıfırları koruyarak Excel uyumlu UTF-8 BOM CSV üretir.
+          </p>
+          <div class="action-row">
+            <button class="run-btn tool-run" id="btnRunCsvRescue" type="button">Bozuk CSV'yi Onar ve İndir</button>
+          </div>
+        </div>
+
+        <!-- Clipboard Workbench -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Panodan tablo</span>
+            
+          </div>
+          <textarea id="clipTextarea" class="mono-input" rows="3" placeholder="Excel'den kopyaladığınız tabloyu buraya yapıştırın (Ctrl + V)..." style="margin-bottom: 10px;"></textarea>
+          <div class="action-row">
+            <button class="run-btn tool-run" id="btnCleanClipboard" type="button">Temizle & Panoya Kopyala</button>
+            <button class="scan-run" id="btnClipToTable" type="button">Tezgâha Aktar</button>
+          </div>
+        </div>
+
+        <!-- Advanced Shape Transforms -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Tablo şekli: pivot, patlat, JSON düzleştir</span>
+          </div>
+          <p class="wb-card-desc">
+            Çapraz matris tabloları oluşturun (Pivot), virgüllü hücreleri satırlara patlatın (Explode), iç içe JSON nesnelerini düzleştirin veya boşlukları doldurun (Fill Down).
+          </p>
+          <div class="action-row">
+            <button class="scan-run" id="btnOpenPivot" type="button">Pivot Tablo</button>
+            <button class="scan-run" id="btnExplodeCol" type="button">Hücre Patlat (Explode)</button>
+            <button class="run-btn tool-run" id="btnFlattenJson" type="button">JSON Flatten</button>
+            <button class="scan-run" id="btnFillDown" type="button">Boşluk Doldur (Fill Down)</button>
+          </div>
+        </div>
+
+        <!-- Deep Inspector & Synthetic -->
+        <div class="wb-card">
+          <div class="wb-card-title">
+            <span>Sentetik veri ve Excel temizliği</span>
+          </div>
+          <p class="wb-card-desc">
+            Gerçek verinin şemasından test verisi üretin, Excel dosyasının gizli şişkinliklerini denetleyin, boş satır kuyruğunu kırpın veya formülleri statik değerlere çevirin.
+          </p>
+          <div class="action-row">
+            <button class="run-btn tool-run" id="btnGenSynthetic" type="button">Sentetik Test Verisi Üret</button>
+            <button class="scan-run" id="btnInspectDeep" type="button">Excel Röntgeni Çek</button>
+            <button class="pick-btn reveal" id="btnTrimUsedRange" type="button" title="Arkadaki boş biçimlendirilmiş satırları ve sütunları kırpar">Boş satırları kırp</button>
+            <button class="pick-btn warn" id="btnStripFormulas" type="button" title="Formülleri statik değerlere çevirir, dış bağlantıları temizler">Formülleri dondur</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PDF işleri ana istasyondaki "PDF" aracındadır; kalıcı karartma henüz yok (CLAUDE.md §3). -->
+
+    <!-- ============================================== -->
+    <!-- DOMAIN 5: WORKFLOWS & RECIPES (Automate & Batch) -->
+    <!-- ============================================== -->
+    <section class="wb-section" id="sec-workflows">
+      <div class="wb-card">
+        <div class="wb-card-title">
+          <span>İşlem tarifi</span>
+          <div class="action-row" style="margin: 0; padding: 0;">
+            <button class="scan-run" id="btnRecipeUndo" type="button" title="Geri Al (Undo)">Geri al</button>
+            <button class="scan-run" id="btnRecipeRedo" type="button" title="İleri Al (Redo)">Yinele</button>
+          </div>
+        </div>
+        <p class="wb-card-desc">
+          Verisiz işlem adımlarını sırayla ekleyin. İstediğiniz adıma geri dönebilir, tarifinizi JSON olarak dışa aktarabilir ve her ay tekrar kullanabilirsiniz.
+        </p>
+        
+        <!-- Step History Timeline List -->
+        <div id="recipeStepsList" class="recipe-history">
+          <p style="color: var(--ink-muted); font-size: 0.83rem;">Henüz işlem adımı eklenmedi.</p>
+        </div>
+
+        <div class="action-row">
+          <button class="scan-run" id="btnAddStepNormalize" type="button">Başlıkları Normalize Et</button>
+          <button class="scan-run" id="btnAddStepDedupe" type="button">Tekilleştir</button>
+          <button class="scan-run" id="btnAddStepMask" type="button">Maskele</button>
+          <button class="run-btn tool-run" id="btnExportRecipeJson" type="button">Tarifi indir (.json)</button>
+          <button class="pick-btn warn" id="btnExportRunManifest" type="button" title="Bu işlem oturumu için doğrulanabilir Sıfır-PII denetim manifestosu üretir">İşlem kaydı (.run.json)</button>
+          <button class="scan-run" id="btnImportRecipeJson" type="button">Tarif yükle</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Global Command Palette Modal (Ctrl + K) -->
+<div class="palette-backdrop" id="paletteBackdrop">
+  <div class="palette-box">
+    <div class="palette-input-wrap">
+      <input type="text" id="paletteInput" placeholder="Bir işlem, araç veya komut arayın (Örn: profil, sql, test, maskele)..." autocomplete="off">
+      <kbd>ESC</kbd>
+    </div>
+    <div class="palette-list" id="paletteList"></div>
+  </div>
+</div>
+
+<!-- Motorlar sayfada değil, tezgah-worker.js iş parçacığında yüklenir: tablo ve
+     hesaplama oradadır, sayfa hiçbir işlemde donmaz. -->
+<script src="command-palette.js"></script>
+<script src="workbench-ui.js"></script>
+</body>
+</html>

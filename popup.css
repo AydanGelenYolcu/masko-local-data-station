@@ -1,0 +1,143 @@
+html, body{
+  width:380px;
+  margin:0;
+}
+
+.popup{
+  display:flex;
+  flex-direction:column;
+  gap:0.75rem;
+  padding:1rem;
+}
+
+.popup-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:0.5rem;
+}
+.popup-title{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+}
+.popup-title h1{
+  font-size:1.05rem;
+  margin:0;
+  font-weight:700;
+}
+.popup-title .brand-mark{
+  width:1.5rem; height:1.5rem;
+}
+.popup-title .popup-logo{
+  width:1.65rem; height:1.65rem;
+  border-radius:50%;
+  border:1px solid var(--rule);
+  object-fit:cover;
+  background:var(--surface);
+}
+
+.popup-tabs{
+  margin:0;
+}
+
+.popup textarea{
+  min-height:90px;
+  font-size:0.82rem;
+}
+
+.popup-primary{
+  width:100%;
+  text-align:center;
+}
+
+.popup-pick{
+  align-self:stretch;
+  text-align:center;
+}
+
+.popup-output-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:0.4rem;
+}
+.popup-output-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:0.5rem;
+}
+.popup-output-head label{
+  font-size:0.76rem;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  color:var(--ink-muted);
+  font-weight:600;
+}
+.popup-output-wrap textarea{
+  min-height:80px;
+  background:var(--surface-alt);
+}
+
+.popup-full-link{
+  margin-top:0.1rem;
+  background:none;
+  border:none;
+  border-top:1px solid var(--rule);
+  color:var(--ink-muted);
+  font-family:var(--font-ui);
+  font-size:0.78rem;
+  font-weight:600;
+  cursor:pointer;
+  text-align:center;
+  padding:0.6rem 0 0;
+}
+.popup-full-link:hover{ color:var(--ink); }
+.popup-full-link:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+.settings-group{
+  display:flex;
+  flex-direction:column;
+  gap:0.4rem;
+  margin-bottom:0.75rem;
+}
+.settings-title{
+  font-size:0.85rem;
+  font-weight:700;
+  margin:0;
+  color:var(--ink);
+}
+.settings-hint{
+  font-size:0.75rem;
+  color:var(--ink-muted);
+  margin:0 0 0.25rem 0;
+  line-height:1.35;
+}
+.site-toggle-list{
+  display:flex;
+  flex-direction:column;
+  gap:0.4rem;
+  background:var(--surface-alt);
+  padding:0.6rem;
+  border-radius:var(--r-md);
+  border:1px solid var(--rule);
+}
+.site-toggle-item{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  font-size:0.8rem;
+  font-weight:500;
+  cursor:pointer;
+  user-select:none;
+}
+.site-toggle-item input[type="checkbox"]{
+  cursor:pointer;
+  accent-color:var(--mask);
+}
+.settings-feedback{
+  font-size:0.75rem;
+  font-weight:600;
+  color:var(--reveal);
+  padding:0.25rem 0;
+}

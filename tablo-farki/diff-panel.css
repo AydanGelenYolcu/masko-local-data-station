@@ -1,0 +1,425 @@
+/* Renk, köşe ve ölçü tokenları: ../tokens.css (bu dosyadan önce yüklenir).
+   Aşağıdaki adlar yalnız bu sayfanın HTML/JS'indeki satır içi stiller için takma addır. */
+:root {
+  --bg-primary: var(--bg);
+  --bg-card: var(--surface);
+  --bg-card-hover: var(--surface-hover);
+  --bg-card-alt: var(--surface-alt);
+  --border: var(--rule-strong);
+  --border-focus: var(--tool);
+  --text-main: var(--ink);
+  --text-muted: var(--ink-muted);
+  --ok-bg: var(--reveal-soft);
+  --warn-bg: var(--warn-soft);
+  --danger-bg: var(--mask-soft);
+  --font: var(--font-ui);
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.diff-app {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.diff-header h1 {
+  font-size: var(--fs-lg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+
+.diff-badge {
+  font-size: var(--fs-xs);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--tool-soft);
+  color: var(--tool);
+  border: 1px solid var(--tool-border);
+  font-weight: 600;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 18px;
+}
+
+.dual-drop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .dual-drop-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.drop-card {
+  border: 2px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  background: var(--surface-alt);
+}
+
+.drop-card:hover, .drop-card.drag-over {
+  border-color: var(--tool);
+  background: var(--tool-soft);
+}
+
+.drop-card.loaded {
+  border-color: var(--reveal);
+  border-style: solid;
+  background: var(--reveal-soft);
+}
+
+.drop-card-icon {
+  display: none;
+}
+
+.drop-card h3 {
+  font-size: var(--fs-md);
+  margin-bottom: 4px;
+}
+
+.drop-card-sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.config-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.key-selector-box {
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 12px;
+}
+
+.key-selector-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.key-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  padding: 4px 10px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.key-chip:hover {
+  background: var(--surface-hover);
+}
+
+.key-chip input {
+  accent-color: var(--tool);
+}
+
+.key-chip input:checked + span {
+  color: var(--tool);
+  font-weight: 600;
+}
+
+.stats-ribbon {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stat-pill {
+  padding: 6px 12px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.stat-pill.added {
+  background: var(--reveal-soft);
+  border: 1px solid var(--reveal-border);
+  color: var(--reveal);
+}
+
+.stat-pill.deleted {
+  background: var(--mask-soft);
+  border: 1px solid var(--mask-border);
+  color: var(--mask);
+}
+
+.stat-pill.modified {
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
+  color: var(--warn);
+}
+
+.stat-pill.unchanged {
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  color: var(--ink-muted);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-alt);
+  padding: 4px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--rule);
+}
+
+.filter-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  padding: 6px 14px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.filter-btn:hover {
+  color: var(--ink);
+}
+
+.filter-btn.active {
+  background: var(--tool);
+  color: var(--tool-ink);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+}
+
+.btn:focus-visible, .filter-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--tool);
+  color: var(--tool-ink);
+}
+.btn-primary:hover {
+  background: var(--tool-hover);
+}
+
+.btn-success {
+  background: var(--reveal);
+  color: var(--reveal-ink);
+}
+.btn-success:hover {
+  background: var(--reveal-hover);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+}
+.btn-secondary:hover {
+  background: var(--surface-hover);
+}
+
+.table-diff-wrap {
+  max-height: 500px;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+table.diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+table.diff-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-alt);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule-strong);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+table.diff-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+/* Satır durumları: renk tek başına anlam taşımaz — soldaki şerit ve etiket de var */
+tr.row-added {
+  background: var(--reveal-soft);
+}
+tr.row-added td:first-child {
+  border-left: 3px solid var(--reveal);
+}
+
+tr.row-deleted {
+  background: var(--mask-soft);
+}
+tr.row-deleted td:first-child {
+  border-left: 3px solid var(--mask);
+}
+
+tr.row-modified {
+  background: var(--warn-soft);
+}
+tr.row-modified td:first-child {
+  border-left: 3px solid var(--warn);
+}
+
+/* Hücre içi eski/yeni fark gösterimi */
+.cell-diff {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+}
+
+.val-old {
+  color: var(--mask);
+  text-decoration: line-through;
+}
+
+.val-arrow {
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+
+.val-new {
+  color: var(--reveal);
+  font-weight: 600;
+}
+
+.tag-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  font-weight: 700;
+}
+.tag-badge.tag-added {
+  background: var(--reveal);
+  color: var(--reveal-ink);
+}
+.tag-badge.tag-deleted {
+  background: var(--mask);
+  color: var(--mask-ink);
+}
+.tag-badge.tag-modified {
+  background: var(--warn);
+  color: var(--surface);
+}
+
+/* Kıyaslanamayan satırlar: tekrarlı anahtar ve boş anahtar (sessizce düşmezler).
+   Tekrarlı anahtar yeni bir renk almaz: mürekkep + kesik şerit ile ayrılır. */
+.stat-pill.duplicate {
+  background: var(--surface);
+  border: 1px dashed var(--ink);
+  color: var(--ink);
+}
+
+.stat-pill.blank-key {
+  background: var(--surface-alt);
+  border: 1px dashed var(--ink-muted);
+  color: var(--ink-muted);
+}
+
+tr.row-duplicate {
+  background: var(--surface-alt);
+}
+tr.row-duplicate td:first-child {
+  border-left: 3px dashed var(--ink);
+}
+
+tr.row-blank td:first-child {
+  border-left: 3px dashed var(--ink-muted);
+}
+
+.tag-badge.tag-duplicate {
+  background: var(--ink);
+  color: var(--surface);
+}
+.tag-badge.tag-blank {
+  background: var(--ink-muted);
+  color: var(--surface);
+}

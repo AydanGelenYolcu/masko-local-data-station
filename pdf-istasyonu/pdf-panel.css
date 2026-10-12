@@ -1,0 +1,484 @@
+/* Renk, köşe ve ölçü tokenları: ../tokens.css (bu dosyadan önce yüklenir). */
+/* =====================================================
+   ÇEVRİMDIŞI GÜVENLİ PDF İSTASYONU — CSS
+   Masko ortak tasarım dili (Warm Neutral + Accent)
+   ===================================================== */
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-app {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  flex: 1;
+}
+
+/* TOP BAR */
+.pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--rule);
+}
+
+.pdf-title-group h1 {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.pdf-badge {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  background: var(--ok-soft);
+  color: var(--ok);
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+}
+
+.pdf-security-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--ok);
+  background: var(--ok-soft);
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  font-weight: 500;
+}
+
+.pdf-security-pill .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--ok);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* MODE NAVIGATION TABS */
+.pdf-nav-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 2px;
+}
+
+.pdf-tab-btn {
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  transition: all 0.15s ease;
+}
+
+.pdf-tab-btn:hover {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+
+.pdf-tab-btn.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--surface);
+}
+
+/* CARDS & CONTAINERS */
+.pdf-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* DROP ZONE */
+.dropzone {
+  border: 2px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6) var(--sp-4);
+  text-align: center;
+  background: var(--surface-alt);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.dropzone:hover, .dropzone:focus-visible, .dropzone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dropzone-icon {
+  font-size: 38px;
+  margin-bottom: var(--sp-2);
+}
+
+.dropzone h2 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dropzone-sub {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  margin-top: var(--sp-1);
+}
+
+/* CONTROLS ROW */
+.pdf-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3);
+  background: var(--surface-alt);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+}
+
+.pdf-controls-left, .pdf-controls-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.btn {
+  height: var(--h-control);
+  padding: 0 14px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule-strong);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--rule-control);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-fill);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.btn-danger:hover {
+  background: var(--danger-soft);
+}
+
+/* PAGE GRID */
+.pdf-page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.pdf-page-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.pdf-page-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+.pdf-page-card.is-deleted {
+  opacity: 0.35;
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.pdf-page-preview {
+  width: 100%;
+  height: 140px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.pdf-page-preview .preview-icon {
+  font-size: 32px;
+  color: var(--ink-faint);
+}
+
+.pdf-page-meta {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.pdf-page-actions {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  justify-content: center;
+}
+
+.icon-btn {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 4px 6px;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  color: var(--ink);
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+}
+
+/* FILE MERGE LIST */
+.pdf-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.pdf-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+.pdf-file-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.pdf-file-badge {
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  background: var(--surface);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+}
+
+/* INPUTS */
+.input-text {
+  height: var(--h-control);
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+}
+
+.input-text:focus {
+  border-color: var(--accent);
+}
+
+/* STATUS / TOAST */
+.pdf-status-banner {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.pdf-status-banner.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border: 1px solid var(--ok);
+}
+
+.pdf-status-banner.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border: 1px solid var(--warn-border);
+}
+
+/* ---------- Yeni araçlar (sayfa numarası, filigran, resimden PDF, kırp, form) ---------- */
+.pdf-nav-tabs { flex-wrap: wrap; }
+
+.pdf-hizli-satir {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center;
+  margin-bottom: var(--sp-2); padding: var(--sp-3);
+  background: var(--surface-alt); border: 1px solid var(--rule); border-radius: var(--r-md);
+}
+.pdf-hizli-satir label { font-weight: 600; font-size: var(--fs-sm); }
+.pdf-hizli-satir .input-text { width: 200px; }
+
+.pdf-ipucu { font-size: var(--fs-xs); color: var(--ink-muted); margin: var(--sp-2) 0; }
+
+.pdf-alt-eylem { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-5); }
+.btn-buyuk { height: 42px; padding: 0 24px; font-size: var(--fs-md); }
+
+.pdf-secenekler {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--sp-3) var(--sp-4); align-items: end; margin-bottom: var(--sp-3);
+}
+.pdf-secenekler > label {
+  display: flex; flex-direction: column; gap: var(--sp-1);
+  font-size: var(--fs-xs); font-weight: 600; color: var(--ink-muted);
+}
+.pdf-secenekler > label[hidden] { display: none; }
+.pdf-secenekler .input-text { width: 100%; color: var(--ink); font-weight: 400; }
+.pdf-secenekler input[type="range"] { width: 100%; accent-color: var(--accent); }
+.pdf-onay {
+  display: inline-flex !important; flex-direction: row !important; align-items: center;
+  gap: var(--sp-2); font-size: var(--fs-sm) !important; color: var(--ink) !important; font-weight: 500 !important;
+}
+.input-renk {
+  width: 64px; height: var(--h-control); padding: 2px;
+  border: 1px solid var(--rule-control); border-radius: var(--r-md); background: var(--surface);
+}
+
+/* Resimden PDF: sıralanabilir küçük resimler */
+.pdf-gorsel-listesi {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-3);
+}
+.pdf-gorsel-oge {
+  display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2);
+  background: var(--surface-alt); border: 1px solid var(--rule); border-radius: var(--r-md);
+}
+.pdf-gorsel-oge img {
+  width: 100%; height: 120px; object-fit: contain;
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sm);
+}
+.pdf-gorsel-oge .ad { font-size: var(--fs-xs); color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-gorsel-oge .eylemler { display: flex; gap: 4px; justify-content: center; }
+
+/* Form alanları */
+.pdf-form-alanlari {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3);
+}
+.pdf-form-alani { display: flex; flex-direction: column; gap: var(--sp-1); }
+.pdf-form-alani > span { font-size: var(--fs-xs); font-weight: 600; color: var(--ink-muted); overflow-wrap: anywhere; }
+.pdf-form-alani .input-text { width: 100%; }
+.pdf-form-alani select[multiple] { height: auto; min-height: 72px; padding: 4px; }
+.pdf-form-bos { font-size: var(--fs-sm); color: var(--ink-muted); }
+
+/* Düzenle: sürükle-bırak ve boş sayfa */
+.pdf-page-card { cursor: grab; }
+.pdf-page-card.is-dragging { opacity: 0.4; }
+.pdf-page-card.is-drop-target { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.pdf-page-card.is-blank .pdf-page-preview { border-style: dashed; }
+.pdf-form-alani input[type="checkbox"] { align-self: flex-start; width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* Sayfa küçük resimleri (pdf.js) */
+.pdf-page-preview img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
+/* Kırp: ilk sayfa önizlemesi, kalan alan çerçeveli, kırpılan kenar karartılmış */
+.pdf-kirp-onizleme {
+  position: relative; display: inline-block; overflow: hidden; margin-bottom: var(--sp-3);
+  border: 1px solid var(--rule-strong); border-radius: var(--r-sm); background: var(--surface);
+}
+.pdf-kirp-onizleme canvas { display: block; max-width: 100%; height: auto; }
+.pdf-kirp-maske {
+  position: absolute; outline: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px color-mix(in srgb, var(--ink) 45%, transparent);
+  pointer-events: none;
+}
+
+/* Karart: sayfa sahnesi ve çizilen kutular */
+.pdf-karart-gezinme { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: var(--sp-2) 0; }
+.pdf-karart-gezinme span { font-size: var(--fs-sm); font-weight: 600; min-width: 110px; text-align: center; }
+.pdf-karart-sahne {
+  position: relative; display: inline-block; max-width: 100%; margin-bottom: var(--sp-3);
+  border: 1px solid var(--rule-strong); background: var(--surface);
+  cursor: crosshair; user-select: none; touch-action: none;
+}
+.pdf-karart-sahne canvas { display: block; max-width: 100%; height: auto; }
+.pdf-karart-katman { position: absolute; inset: 0; }
+.pdf-karart-kutu {
+  position: absolute; background: var(--ink); opacity: 0.85;
+  outline: 1px solid var(--mask); cursor: pointer;
+}
+.pdf-karart-kutu:hover { outline: 2px solid var(--mask); opacity: 0.7; }
+.pdf-karart-kutu.cizilen { background: color-mix(in srgb, var(--mask) 35%, transparent); opacity: 1; }
+
+/* Eski Chrome uyarısı (pdf.js'e dayanan araçlar) */
+.pdf-surum-uyarisi {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--fs-sm);
+}

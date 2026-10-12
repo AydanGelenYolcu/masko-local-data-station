@@ -1,0 +1,310 @@
+/* Renk, köşe ve ölçü tokenları: ../tokens.css (bu dosyadan önce yüklenir).
+   Aşağıdaki adlar yalnız bu sayfanın HTML/JS'indeki satır içi stiller için takma addır. */
+:root {
+  --bg-primary: var(--bg);
+  --bg-card: var(--surface);
+  --bg-card-hover: var(--surface-hover);
+  --bg-card-alt: var(--surface-alt);
+  --border: var(--rule-strong);
+  --border-focus: var(--tool);
+  --text-main: var(--ink);
+  --text-muted: var(--ink-muted);
+  --font: var(--font-ui);
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.unpivot-app {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.unpivot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.unpivot-header h1 {
+  font-size: var(--fs-lg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+
+.unpivot-badge {
+  font-size: var(--fs-xs);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--tool-soft);
+  color: var(--tool);
+  border: 1px solid var(--tool-border);
+  font-weight: 600;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 18px;
+}
+
+.drop-card {
+  border: 2px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  padding: 28px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  background: var(--surface-alt);
+}
+
+.drop-card:hover, .drop-card.drag-over {
+  border-color: var(--tool);
+  background: var(--tool-soft);
+}
+
+.drop-card-icon {
+  display: none;
+}
+
+.drop-card h3 {
+  font-size: var(--fs-md);
+  margin-bottom: 4px;
+}
+
+.drop-card-sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.column-selectors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .column-selectors-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-box {
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.col-box-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.col-checkbox-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.col-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.col-checkbox-item input {
+  accent-color: var(--tool);
+}
+
+.col-checkbox-item:hover {
+  background: var(--surface-hover);
+}
+
+.settings-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+}
+
+.input-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+}
+
+.input-field input[type="text"] {
+  background: var(--surface);
+  border: 1px solid var(--rule-control);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+}
+
+.input-field input[type="text"]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.stats-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stat-chip {
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-chip .val {
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-chip .lbl {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--tool);
+  color: var(--tool-ink);
+}
+.btn-primary:hover {
+  background: var(--tool-hover);
+}
+
+.btn-success {
+  background: var(--reveal);
+  color: var(--reveal-ink);
+}
+.btn-success:hover {
+  background: var(--reveal-hover);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+}
+.btn-secondary:hover {
+  background: var(--surface-hover);
+}
+
+.table-preview-wrap {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+table.unpivot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+table.unpivot-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-alt);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule-strong);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+table.unpivot-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+table.unpivot-table tr:hover td {
+  background: var(--surface-hover);
+}

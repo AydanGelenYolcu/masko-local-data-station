@@ -1,0 +1,144 @@
+/* =====================================================
+   MASKO — ORTAK TASARIM TOKENLARI
+   Bütün sayfalar (ana istasyon, popup, araç panelleri, Veri Tezgâhı,
+   rehber) bu dosyayı kendi CSS'inden ÖNCE yükler. Renk, köşe ve ölçü
+   burada tanımlanır; sayfa CSS'leri yeni renk üretmez, bu adları kullanır.
+
+   Renk anlamı logodan gelir (bkz. context/TASARIM.md):
+     terracotta (--mask)   = gizlendi, maskele eylemi, silme/tehlike
+     yeşil      (--reveal) = geri açıldı, yerelde güvende, onay
+     adaçayı    (--tool)   = nötr araç eylemi (dosya araçlarının birincil düğmesi)
+     kehribar   (--warn)   = gözden geçir
+   Mavi, cyan, mor yok. Yeni bir renk gerekiyorsa önce buraya ve
+   context/TASARIM.md'ye eklenir.
+   ===================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Zemin ve yüzeyler (sıcak kâğıt) ---- */
+  --bg:            #f1efe8;
+  --surface:       #ffffff;
+  --surface-alt:   #faf9f5;
+  --surface-hover: #f4f2ec;
+  --row-stripe:    #fcfbf8;
+
+  /* ---- Kenarlıklar ---- */
+  --rule:         #ddd9cf;  /* yalnız ayırıcı; kontrol kenarında kullanma */
+  --rule-strong:  #c9c4b6;  /* kart ve tablo başlığı kenarı */
+  --rule-control: #8d8678;  /* input/checkbox kenarı (WCAG 1.4.11) */
+
+  /* ---- Metin (logodaki kömür kontur) ---- */
+  --ink:          #1c2024;
+  --ink-muted:    #5f6670;
+  --ink-faint:    #8a9099;  /* yalnız devre dışı öğeler */
+  --ink-on-fill:  #ffffff;  /* adaçayı/yeşil/terracotta dolgu üstündeki metin */
+
+  /* ---- Maske: terracotta ---- */
+  --mask:       #b23b2a;
+  --mask-hover: #94301f;
+  --mask-ink:   #ffffff;
+  --mask-soft:  #f3e0da;
+  --mask-border:#e2bdb1;
+
+  /* ---- Geri açma / güvende: yeşil ---- */
+  --reveal:       #2c6b5e;
+  --reveal-hover: #225449;
+  --reveal-ink:   #ffffff;
+  --reveal-soft:  #dfeae5;
+  --reveal-border:#b3cfc4;
+
+  /* ---- Nötr araç eylemi: adaçayı ---- */
+  --tool:        #4f6b57;
+  --tool-hover:  #3e5645;
+  --tool-ink:    #ffffff;
+  --tool-soft:   #e6ece4;
+  --tool-border: #b6c6b5;
+
+  /* ---- Gözden geçir: kehribar ---- */
+  --warn:        #7a5309;
+  --warn-soft:   #f2e6cf;
+  --warn-border: #dcc69a;
+
+  /* ---- Eski adlar: sayfa CSS'lerinin kullandığı takma adlar ---- */
+  --accent:        var(--tool);
+  --accent-hover:  var(--tool-hover);
+  --accent-bright: var(--tool);
+  --accent-soft:   var(--tool-soft);
+  --accent-border: var(--tool-border);
+  --tool-accent:   var(--tool);
+  --ok:            var(--reveal);
+  --ok-hover:      var(--reveal-hover);
+  --ok-soft:       var(--reveal-soft);
+  --ok-border:     var(--reveal-border);
+  --danger:        var(--mask);
+  --danger-hover:  var(--mask-hover);
+  --danger-soft:   var(--mask-soft);
+  --danger-border: var(--mask-border);
+  --conf-warn:     var(--warn);
+  --focus:         var(--reveal);
+
+  /* ---- Tipografi ---- */
+  --font-ui:   system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --fs-2xs: 11px;
+  --fs-xs:  12px;
+  --fs-sm:  13px;
+  --fs-md:  14px;
+  --fs-lg:  16px;
+  --fs-xl:  20px;
+  --fs-2xl: 24px;
+
+  /* ---- Ölçüler (4 px tabanlı) ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* ---- Köşeler: kontrol 4, panel 8, yalnız durum etiketi tam yuvarlak ---- */
+  --r-sm:   4px;
+  --r-md:   4px;
+  --r-lg:   8px;
+  --r-full: 999px;
+
+  /* ---- Derinlik: düz; gölge yalnız üstte açılan katmanlarda ---- */
+  --shadow-xs:  none;
+  --shadow-sm:  0 1px 2px rgba(28,32,36,0.06);
+  --shadow-md:  0 4px 12px -2px rgba(28,32,36,0.12);
+  --shadow-top: 0 -1px 3px rgba(28,32,36,0.07);
+
+  --h-control:  32px;
+  --h-icon-btn: 28px;
+  --h-row:      32px;  /* kitle-tekillestirme/dedup-ui.js ROW_HEIGHT ile aynı kalmalı */
+}
+
+/* Seçilen görünüm (tema.js) form denetimlerine ve kaydırma çubuklarına da yansır. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#14171b; --surface:#1b1f24; --surface-alt:#20252b;
+    --surface-hover:#282e35; --row-stripe:#1e2227;
+    --rule:#2f353c; --rule-strong:#4a525b; --rule-control:#89939e;
+    --ink:#e9e6df; --ink-muted:#b2bac2; --ink-faint:#7d858e;
+    --ink-on-fill:#141a16;
+    --mask:#e2705d; --mask-hover:#f39380; --mask-ink:#1a0e0c; --mask-soft:#3a231f; --mask-border:#784337;
+    --reveal:#6fb3a2; --reveal-hover:#93c9ba; --reveal-ink:#0d1a17; --reveal-soft:#1f312d; --reveal-border:#3e6a5f;
+    --tool:#a5c2aa; --tool-hover:#c0d6c3; --tool-ink:#141a16; --tool-soft:#232c26; --tool-border:#4a5f4f;
+    --warn:#d8ad6a; --warn-soft:#332a18; --warn-border:#765d35;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 14px -2px rgba(0,0,0,0.45);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#14171b; --surface:#1b1f24; --surface-alt:#20252b;
+  --surface-hover:#282e35; --row-stripe:#1e2227;
+  --rule:#2f353c; --rule-strong:#4a525b; --rule-control:#89939e;
+  --ink:#e9e6df; --ink-muted:#b2bac2; --ink-faint:#7d858e;
+  --ink-on-fill:#141a16;
+  --mask:#e2705d; --mask-hover:#f39380; --mask-ink:#1a0e0c; --mask-soft:#3a231f; --mask-border:#784337;
+  --reveal:#6fb3a2; --reveal-hover:#93c9ba; --reveal-ink:#0d1a17; --reveal-soft:#1f312d; --reveal-border:#3e6a5f;
+  --tool:#a5c2aa; --tool-hover:#c0d6c3; --tool-ink:#141a16; --tool-soft:#232c26; --tool-border:#4a5f4f;
+  --warn:#d8ad6a; --warn-soft:#332a18; --warn-border:#765d35;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 14px -2px rgba(0,0,0,0.45);
+}

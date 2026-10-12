@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masko — Kapsamlı Kullanım Rehberi ve Modül El Kitabı</title>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+  <aside class="sidebar" aria-label="Rehber bölümleri">
+    <a class="brand" href="#baslangic">Masko<br><small>Kullanım Rehberi & El Kitabı</small></a>
+    <nav>
+      <a href="#baslangic">1. Başlangıç ve İlkeler</a>
+      <a href="#maskeleme">2. Metin Maskeleme</a>
+      <a href="#gorsel-karartma">3. Görsel Karartma & OCR</a>
+      <a href="#sohbet-siteleri">4. Sohbet Sitelerinde Maskeleme</a>
+      <a href="#geri-ac">5. Geri Açma (Unmask)</a>
+      <a href="#dosya-analizi">6. Tablo Örneği & Veri Pasaportu</a>
+      <a href="#tekillestirme">7. Tekilleştirme & Anti-Join</a>
+      <a href="#csv-bolme">8. CSV Bölme İstasyonu</a>
+      <a href="#pdf-istasyonu">9. PDF</a>
+      <a href="#bulanik-esleme">10. Bulanık Eşleme</a>
+      <a href="#ashify">11. Gerçek Dosyayı Maskeleme</a>
+      <a href="#unpivot">12. Genişten Uzuna</a>
+      <a href="#tablo-farki">13. Tablo Karşılaştırma</a>
+      <a href="#encoding">14. Karakter Onarma</a>
+      <a href="#workbench">15. Veri Tezgâhı</a>
+    </nav>
+  </aside>
+  <main>
+    <header>
+      <h1>Masko — Kullanım Rehberi ve El Kitabı</h1>
+      <p>Kurumsal verilerinizi buluta göndermeden; tarayıcınızın içinde %100 yerel, güvenli, kayıpsız ve deterministik olarak işleyin. Sıfır sunucu, sıfır ağ erişimi, sıfır yapay zekâ bağımlılığı.</p>
+    </header>
+
+    <!-- BÖLÜM 1 -->
+    <section id="baslangic">
+      <h2>1. Başlangıç ve Temel İlkeler</h2>
+      <p>Masko (Maskeleme İstasyonu), hassas kurumsal verileri (kişisel kimlikler, finansal kayıtlar, müşteri listeleri, gizli sözleşmeler) yapay zekâ sistemlerine veya üçüncü taraflara göndermeden önce istemci tarafında koruma altına alan bir yerel veri işleme tezgâhıdır.</p>
+      
+      <h3>Temel Güvenceler ve Mimari Kurallar:</h3>
+      <ul>
+        <li><strong>Sıfır Ağ Erişimi (Zero-Network &amp; Strict CSP):</strong> Uzantı veya araç kesinlikle hiçbir harici API'ye, analiz servisine veya bulut sunucusuna bağlanmaz (<code>0 remote fetch</code>). Tüm algoritmalar doğrudan bilgisayarınızın RAM ve CPU gücüyle tarayıcı içinde çalışır. Sayfadaki Content-Security-Policy (CSP) kuralları, veriler bir şekilde DOM'a sızsa dahi dışarıya görsel veya bağlantı isteği atılmasını tarayıcı düzeyinde kilitler.</li>
+        <li><strong>Kayıpsız Takma Adlandırma (Lossless Pseudonymization):</strong> Metinlerdeki kişisel veriler bağlama uygun yer tutucularla (örn. <code>[TCKN_1]</code>, <code>[MUSTERI_1]</code>) değiştirilir. Geri açma sözlüğü sayesinde AI'dan dönen analiz metni orijinaline birebir, harfiyen ve kayıpsız dönüştürülebilir.</li>
+        <li><strong>Deterministik Kural Motoru (Sıfır Halüsinasyon):</strong> Olasılıksal yapay zekâ tahminleri yerine matematiksel ve kural tabanlı algoritmalar kullanılır. Aynı girdi her zaman aynı sonucu üretir.</li>
+        <li><strong>Formül Enjeksiyonu Koruması (OWASP CSV Injection):</strong> Tablolarda <code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>, sekme (tab) veya satır başı ile başlayan tehlikeli hücrelerin başına otomatik olarak <code>'</code> tek tırnak eklenir; böylece dosya Excel'de açıldığında zararlı komut çalıştırması önlenir.</li>
+        <li><strong>ReDoS Stres Dayanıklılığı:</strong> Tüm düzenli ifadeler (regex) $O(N)$ doğrusal karmaşıklıkla çalışacak şekilde optimize edilmiştir. 100.000 karakterlik saldırgan veya bozuk yüklerde dahi tarayıcı sekmesi donmaz veya çökmez.</li>
+      </ul>
+    </section>
+
+    <!-- BÖLÜM 2 -->
+    <section id="maskeleme">
+      <h2>2. Metin Maskeleme</h2>
+      <p>Toplantı notları, e-postalar, log kayıtları, müşteri mesajları veya SQL/Python kodlarındaki hassas verileri AI'ya göndermeden önce temizleyin.</p>
+      
+      <h3>Nasıl Çalışır? (Arka Plan Mimarisi)</h3>
+      <ol>
+        <li><strong>18 Otomatik Tespit Türü:</strong> Metin yapıştırıldığında sistem 18 farklı türü aynı anda tarar:
+          <ul>
+            <li><em>Matematiksel Checksum Doğrulamalı:</em> TC Kimlik No, Yabancı Kimlik No, Vergi Kimlik No, IBAN (TR + Uluslararası), Kredi Kartı (Luhn formülü), IMEI.</li>
+            <li><em>Format ve Örüntü Doğrulamalı:</em> E-posta, Telefon (TR + Uluslararası), SSN, KEP Adresi, Araç Plakası, IP/Port, MAC Adresi, UUID/GUID, Kripto Cüzdan Adresleri, Gizli Anahtar / JWT / Şifreler, Tutar (₺/$/€) ve Tarih.</li>
+            <li><em>Bağlamsal Dil İpuçları:</em> Türkçe, İngilizce ve Almanca unvanlar (Sayın, Sn., Mr., Dr., Frau...), etken/edilgen eylemler (tarafından imzalandı, joined, genehmigt von) üzerinden kişi adları tespit edilir.</li>
+          </ul>
+        </li>
+        <li><strong>Görünmez / Sıfır Genişlikli Karakter Savunması:</strong> Regex ve checksum filtrelerini atlatmak için karakterlerin arasına gizlenen sıfır genişlikli boşluklar (<code>\u200B</code>, <code>\u200C</code>, <code>\u200D</code>, <code>\uFEFF</code> vb.) çift yönlü indeks eşleme ile tespit edilir, temiz metin üzerinde doğrulama yapılır ve bulunan aralık orijinal metindeki tam yerine geri eşlenir. Veri hiçbir bayt kaybı olmadan korunur.</li>
+        <li><strong>Önizleme ve Tıklayarak Düzeltme:</strong> Maskeleme sonrasında üretilen metin renkli önizleme kutusunda gösterilir. Yanlışlıkla maskelenmiş bir değer varsa <strong>doğrudan üstüne tıklayarak</strong> maskesini kaldırabilirsiniz; sistem bunu otomatik olarak "Hariç Tutulanlar" listesine ekler.</li>
+      </ol>
+
+      <h3>Butonlar ve Kontroller Ne İşe Yarar?</h3>
+      <dl>
+        <dt><strong>Metin Giriş ve Maskeleme Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Maskele →</code>: Giriş alanındaki metni 18 kurala göre tarar, sözlüğü günceller ve maskeli çıktıyı sağ kutuya döker.</li>
+            <li><code>Adayları tara</code>: Metni değiştirmeden yalnızca bulunan hassas adayları, kod tanımlayıcılarını ve öneri çiplerini aşağıda listeler.</li>
+            <li><code>Seçili metni maskeye ekle</code>: Otomatik taramanın kaçırdığı özel bir şirket içi kod veya terim varsa, metin içinde fareyle seçip bu butona basarak özel etiketle sözlüğe dahil edebilirsiniz.</li>
+            <li><code>Kontrol et ve kopyala</code>: Maskelenmiş çıktıyı panoya kopyalamadan önce "Gönderim Öncesi Son Kontrol (Outbound Modal)" penceresini açar; kalan şüpheli terimleri ve sızıntı risklerini son kez onaylatır.</li>
+            <li><code>Görseli karart</code>: Görsel karartma aracını (OCR ve elle çizim tuvali) modal pencerede açar.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Öneri Çipleri (Tek Tıkla Ekleme)</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Kod tanımlayıcıları:</strong> SQL tablo/kolon adları, değişkenler ve fonksiyon adlarını bulur; tıkladığınızda kod yapısını bozmadan genel takma ad verir.</li>
+            <li><strong>Metin/String değerleri:</strong> Kod içindeki tırnak işaretleri arasında kalan sabit dizgileri tek tıkla maskeleme listesine alır.</li>
+            <li><strong>Türkçe kişi adı adayları &amp; Adres adayları:</strong> Bağlamdan şüphelenilen kişi ve adresleri listeler; onayınız olmadan maskelenmez, yalnızca tıkladıklarınız eklenir.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Proje Sözlüğü Yönetimi</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Aktif proje &amp; Proje oluştur:</strong> Farklı müşteriler veya projeler için ayrı maskeleme sözlükleri tutmanızı sağlar.</li>
+            <li><strong>Saklama süresi:</strong> Süresiz, 1 gün, 7 gün, 30 gün veya 90 gün seçilebilir; belirlenen süre boyunca kullanılmayan sözlükler yerel depolamadan otomatik silinir.</li>
+            <li><strong>Manuel Terim Ekle:</strong> "Gerçek terim" ve "Yerine geçecek ad" yazarak özel eşlemeleri elle sözlüğe kaydedebilirsiniz.</li>
+            <li><strong>Sözlüğü JSON kopyala / İçe aktar / Temizle:</strong> Sözlük eşleşmelerini JSON dosyası olarak yedeklemenizi, başka bir tarayıcıya aktarmanızı veya tek tıkla sıfırlamanızı sağlar.</li>
+          </ul>
+        </dd>
+      </dl>
+    </section>
+
+    <!-- BÖLÜM 3 -->
+    <section id="gorsel-karartma">
+      <h2>3. Görsel Karartma &amp; Çevrimdışı OCR</h2>
+      <p>Kimlik fotokopileri, faturalar, sözleşmeler ve ekran görüntülerindeki hassas alanları tarayıcınızda karartın.</p>
+      
+      <h3>Nasıl Çalışır? (Güvenlik ve Çizim Mimarisi)</h3>
+      <ul>
+        <li><strong>Yerel Tesseract.js OCR:</strong> Görsel doğrudan tarayıcı belleğine (ArrayBuffer) alınır; harici hiçbir sunucuya yüklenmez. Görseldeki Türkçe ve İngilizce yazılar yerel OCR motoruyla okunur ve metindeki TCKN, kredi kartı, telefon, isim gibi koordinatlar otomatik kutu olarak işaretlenir.</li>
+        <li><strong>Serbest Elle Kutu Çizimi (Drag &amp; Drop):</strong> OCR motorları kaşe, ıslak imza, vesikalık fotoğraf, şirket logosu veya taranmış mühürleri metin olmadıkları için yakalayamaz. Tuval üzerinde farenin sol tuşuna basılı tutarak dilediğiniz büyüklükte serbest karartma kutuları (<code>[MANUEL ALAN]</code>) çizebilirsiniz.</li>
+        <li><strong>Ekran Ölçekleme Telafisi:</strong> CSS pikseli ile görselin gerçek piksel çözünürlüğü arasındaki oran dinamik olarak hesaplanır; yüksek DPI (Retina/4K) ekranlarda çizim kayması yaşanmaz.</li>
+        <li><strong>Geri Çözülemez Güvenli Mozaik:</strong> Klasik pikselleme filtreleri yapay zekâ araçlarıyla geri çözülebilir. Masko'nun "Güvenli Mozaik" stili, piksel renklerini alttaki yazıdan değil; çevredeki arka plan renginden ve kriptografik rastgele gürültüden üretir. Bu sayede görselin altındaki orijinal pikseller tamamen yok edilir, tersine mühendislikle geri getirilemez.</li>
+      </ul>
+
+      <h3>Butonlar ve Kontroller Ne İşe Yarar?</h3>
+      <ul>
+        <li><code>Görsel seç</code> / <code>Görseli kaldır</code>: Bilgisayarınızdan bir görsel yükler veya tuvali temizler. (Dilerseniz görseli doğrudan ana metin kutusuna <strong>Ctrl+V</strong> ile de yapıştırabilirsiniz).</li>
+        <li><strong>Karartma stili seçici:</strong>
+          <ul>
+            <li><em>Siyah bant:</em> Seçili alanların üzerine tam opak siyah dikdörtgen çeker.</li>
+            <li><em>Etiketli bant:</em> Kapatılan alanın üzerine hangi tür veri olduğunu yazar (Örn: <code>[TCKN_1]</code>, <code>[İMZA]</code>).</li>
+            <li><em>Mozaik (güvenli):</em> Alttaki pikselleri imha ederek gürültülü mozaik deseni uygular.</li>
+          </ul>
+        </li>
+        <li><code>Karartmayı Önizle</code>: Çizilen ve tespit edilen tüm kutuları seçilen stille tuval üzerine uygulayarak nihai sonucu gösterir.</li>
+        <li><code>Karartılmış görseli indir (PNG)</code>: Orijinal pikselleri kalıcı olarak kapatılmış yeni PNG görselini bilgisayarınıza kaydeder.</li>
+        <li><strong>Kutu Listesi ve Sil Butonları (🗑️):</strong> Tespit edilen ve elle çizilen tüm kutular koordinatlarıyla sağ panelde listelenir. Yanlış çizilen bir kutuyu tek tıkla silebilir veya etiket adını değiştirebilirsiniz.</li>
+      </ul>
+    </section>
+
+    <!-- BÖLÜM 4 -->
+    <section id="sohbet-siteleri">
+      <h2>4. Sohbet Sitelerinde Maskeleme (ChatGPT, Claude, Gemini, AI Studio)</h2>
+      <p>Yapay zekâ sohbet sitelerinde mesaj kutusunun hemen yanında yer alan Masko kumandası ile metinleri kopyala-yapıştır yapmadan doğrudan yazdığınız yerde yerel olarak maskeleyin.</p>
+      
+      <h3>Nasıl Çalışır? (Müdahale ve Gizlilik Mekanizması)</h3>
+      <ul>
+        <li><strong>Yapıştırırken Otomatik Maskeleme (Paste Interception):</strong> Hassas veri içeren bir metni sohbet kutusuna yapıştırdığınızda (Ctrl+V veya sürükle-bırak), tarayıcı olayı siteye iletilmeden önce yakalanır. Metin yerel motorla maskelenir ve kutuya yalnızca maskelenmiş metin yazılır. Böylece ChatGPT veya Claude'un taslak senkronizasyon kodları ham veriyi hiçbir zaman görmez.</li>
+        <li><strong>Gönderim Öncesi Uyarı (Pre-Send Safety Gate):</strong> Mesaj kutusunda unutulmuş maskelenmemiş bir TCKN, IBAN veya e-posta tespit edilirse kumanda yanında <code>Hassas veri</code> uyarısı çıkar. Enter'a veya Gönder butonuna ilk basış bilerek durdurulur; kullanıcı uyarılır. Aynı metinle ikinci kez basılırsa kullanıcının ısrarı kabul edilir.</li>
+        <li><strong>Dürüst Güvenlik Sınırı (Klavye vs Yapıştırma):</strong> Yapıştırılan veriler siteye hiç ulaşmaz. Ancak klavyeyle harf harf yazılan veriler sitenin kendi JavaScript dinleyicileri tarafından görülebilir. Bu nedenle kurumsal hassas verileri doğrudan elle yazmak yerine Masko'ya yapıştırıp maskeli aktarmak en güvenli yoldur.</li>
+      </ul>
+
+      <h3>Kumanda Butonları ve Kontrolleri</h3>
+      <ul>
+        <li><code>⠿ Sürükle ve Sabitle (Drag-to-Pin)</code>: Butonun solundaki 6 noktalı tutamaçtan tutarak kumandayı ekranın dilediğiniz yerine taşıyabilirsiniz. Bırakıldığı an sabitlenir; sohbet kutusu genişlese veya sayfa kaysa da titremez, zıplamaz ve mesajların üstünü kapatmaz.</li>
+        <li><code>↺ Varsayılana Sıfırla</code>: Sabitlenmiş butonu otomatik akıllı hizalama (mesaj kutusunun sağ altı) konumuna döndürür.</li>
+        <li><code>− Küçük Rozet Modu</code>: Kumandayı 34×34 piksel boyutunda minimalist yuvarlak bir rozete dönüştürür. Metin kutusunda maskelenmemiş veri tespit edilirse üzerinde kırmızı uyarı noktası yanar; tıklandığında tam kumanda açılır.</li>
+        <li><code>Maskele Butonu</code>: Mesaj kutusundaki tüm metni yerinde maskeler ve orijinal değerleri ortak sözlüğe kaydeder.</li>
+        <li><code>Seçimi Aç Butonu</code>: AI yanıtında yer alan <code>[MUSTERI_1]</code> gibi bir takma adı fareyle seçtiğinizde, sitenin DOM yapısını bozmadan açılmış gerçek halini güvenli bir yerel pencerede gösterir.</li>
+      </ul>
+    </section>
+
+    <!-- BÖLÜM 5 -->
+    <section id="geri-ac">
+      <h2>5. Geri Açma (Unmask)</h2>
+      <p>Yapay zekâdan dönen analiz raporunda veya kodda yer alan <code>[MUSTERI_1]</code>, <code>[TCKN_2]</code> gibi takma adları tek tıkla orijinal isim ve numaralarına geri çevirin.</p>
+      
+      <h3>Nasıl Çalışır? (Çift Yönlü Kayıpsızlık)</h3>
+      <ul>
+        <li><strong>Oturum ve Proje Sözlüğü Eşleştirmesi:</strong> Geri açma motoru, maskeleme anında oluşturulan yerel sözlük tablosunu kullanır.</li>
+        <li><strong>Kayıpsız Geri Dönüş Güvencesi:</strong> Araya giren tüm sıfır genişlikli karakterler ve orijinal karakter dizilimleri sözlükte saklandığı için <code>unmask(mask(metin)) === metin</code> eşitliği %100 bayt düzeyinde sağlanır.</li>
+        <li><strong>DOM Dokunulmazlığı:</strong> Sohbet sitelerinde geri açma yapılırken sitenin kendi DOM ağacına gerçek veriler yazılmaz; böylece sitenin telemetri betiklerinin gerçek veriyi yakalaması engellenir.</li>
+      </ul>
+
+      <h3>Butonlar ve Kontroller Ne İşe Yarar?</h3>
+      <ul>
+        <li><code>Gerçek değerleri geri koy →</code>: Giriş alanına yapıştırdığınız AI çıktısındaki tüm takma adları sözlükle eşleştirir ve sağdaki kutuda metnin tamamen orijinal haline dönmüş son halini üretir.</li>
+        <li><code>Yalnızca seçimi geri aç</code>: Uzun bir raporun yalnızca belirli bir paragrafını veya tablosunu fareyle seçtiğinizde, seçilmeyen yerleri maskeli bırakarak yalnızca seçtiğiniz bölümü orijinal değerine döndürür.</li>
+        <li><code>Kopyala</code>: Geri açılmış temiz metni tek tıkla panoya kopyalar.</li>
+        <li><strong>Durum Bildirim Satırı:</strong> Kaç adet takma adın başarıyla geri açıldığını, sözlükte bulunamayan bilinmeyen bir etiket olup olmadığını anlık olarak raporlar.</li>
+      </ul>
+    </section>
+
+    <!-- BÖLÜM 6 -->
+    <section id="dosya-analizi">
+      <h2>6. Tablo Örneği — Excel / CSV Analizi & Veri Pasaportu</h2>
+      <p>Büyük kurumsal Excel veya CSV tablolarınızı ChatGPT, Claude veya Gemini gibi yapay zekâ sistemlerine <strong>hiç göndermeden</strong> analiz ettirmek ve kod yazdırmak için kullanılır.</p>
+      
+      <h3>Temel İlke: "Veriye Değil, Şekle İhtiyaç Var"</h3>
+      <p>Bir yapay zekânın sizin için Python grafik kodu, SQL sorgusu veya veri temizleme betiği yazabilmesi için <em>gerçek müşteri isimlerinize, cirolarınıza veya kimlik numaralarınıza ihtiyacı yoktur</em>. İhtiyaç duyduğu tek şey verinin <strong>şekli, veri tipleri, hiyerarşisi ve kolonlar arasındaki ilişkidir</strong>.</p>
+      <p>Dosyanız tarayıcınızdan asla çıkmaz. Sistem iki çıktı üretir:</p>
+      <ul>
+        <li><strong>Veri Pasaportu:</strong> Kolon adları, algılanan tipler, sayısal aralıklar (min/max), boşluk oranları ve dağılım istatistikleri. Tek bir gerçek satır bile içermez.</li>
+        <li><strong>Sentetik Örnek Tablo:</strong> Veri pasaportuna birebir uyan, aynı matematiksel yapıda ama <strong>tamamen uydurma</strong> 10–50 satırlık örnek veri.</li>
+      </ul>
+
+      <h3>Güven Dereceleri Ne Anlama Gelir?</h3>
+      <p>Kolon Denetimi tablosunda her sütunun yanında algılanan tipin güvenilirliğini belirten renkli bir rozet yer alır. Sistem olasılıksal LLM tahmini yapmaz; deterministik kanıtları 4 seviyede puanlar:</p>
+      <ul>
+        <li><strong>Kesin (Certain — %99.9+):</strong> Sadece biçime bakmaz; resmi <strong>matematiksel doğrulama formülünü (checksum)</strong> çalıştırır. TCKN (ilk 10 haneden 11. hane formülü), VKN (vergi no), IBAN (MOD-97) ve Kredi Kartı (Luhn algoritması) test edilir. 50 hücrenin hepsi bu formülü geçiyorsa sonuç kesindir; kontrol etmenize gerek yoktur.</li>
+        <li><strong>Yüksek (High — %85 – %99):</strong> İki bağımsız sinyal birbirini doğrulamıştır: <strong>Doğru Başlık Adı + Hücrelerin %90+'ında Eşleşen Örüntü</strong> (Örn: Başlık <code>eposta</code> ve hücreler geçerli e-posta formatında; veya başlık <code>dogum_tarihi</code> ve hücreler tarih formatında).</li>
+        <li><strong>Orta (Medium — %60 – %85):</strong> Masada tek bir sinyal vardır. Örneğin başlık anlamsızdır (<code>sutun_3</code>) ama veriler telefona benziyordur; ya da başlık <code>musteri_adi</code>'dır ama hücrelerde karışık kodlar vardır. Göz ucuyla kontrol etmeniz önerilir.</li>
+        <li><strong>Düşük (Low — &lt;%60):</strong> Belirgin bir örüntü veya başlık ipucu yoktur; sistem sadece istatistiki bir tahmin yürütmüştür. Bu kolonları mutlaka kontrol edip açılır kutudan doğru tipi elle seçmeniz tavsiye edilir.</li>
+      </ul>
+      <p><em>Zekice Bir Önlem (Çeşitlilik / Cardinality Kontrolü):</em> Örneğin bir kolonda sürekli "Kredi Kartı" yazıyorsa, bu iki büyük harfli kelime normalde Ad-Soyad ile karışabilir. Ancak sistem kolonun çeşitlilik oranına bakar; değerler az sayıda tekrar ediyorsa bunun bir isim olamayacağını anlayıp güveni düşürür ve onu kategori olarak etiketler.</p>
+
+      <h3>Kolon Denetimi: "Sizde Kalan" vs "Gidecek"</h3>
+      <ul>
+        <li><strong>Sizde kalan (gerçek):</strong> Dosyanızdaki gerçek bir örnek değerdir. Sadece neyin değiştiğini gözünüzle teyit etmeniz için ekranda gösterilir; prompt'a veya dışarıya <strong>kesinlikle gitmez</strong>.</li>
+        <li><strong>Gidecek (sahte):</strong> AI'ya gönderilecek sentetik karşılığıdır (Örn: <code>Ahmet Yılmaz</code> ➔ <code>Mehmet Kaya</code>).</li>
+        <li><strong>Güvenli Sözlükler (Sarı Uyarı Kutusu):</strong> Şehir (İstanbul, Ankara), Ay (Ocak, Şubat), Lig veya Bilet Kategorisi gibi kişiyi işaret etmeyen genel veriler <em>gerçek gönderilir</em>. Çünkü bunları da sahteye çevirmek AI'nın yazacağı analizi bozar. Sarı kutu hangi kolonların gerçek gittiğini size açıkça söyler.</li>
+      </ul>
+
+      <h3>Butonlar ve Kontroller Ne İşe Yarar?</h3>
+      <dl>
+        <dt><strong>Mod Seçici Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Sahte örnek üret (AI için)</code>: AI için veri pasaportu ve sentetik örnek üretme moduna geçer.</li>
+            <li><code>Gerçek dosyayı maskele</code>: Tüm dosyanın anonimleştirilmiş halini (seçtiğiniz maskeleme yöntemleriyle) üretme modunu açar.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Seçiciler ve Ayarlar</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Sayfa:</strong> Çok sayfalı Excel (.xlsx) dosyalarında hangi sayfa (sheet) üzerinde çalışacağınızı seçer.</li>
+            <li><strong>Başlık satırı:</strong> İlk satır yerine 2. veya 3. satır kolon başlıklarını içeriyorsa doğru başlık satırını belirlemenizi sağlar.</li>
+            <li><strong>Örnek satır sayısı (10, 20, 30, 50):</strong> AI'ya gönderilecek sentetik örnek satır adedini ayarlar (genelde 20 satır idealdir).</li>
+            <li><strong>AI'dan istediğim:</strong> Görselleştirme, keşifsel analiz, pivot tablo, veri temizliği, SQL sorgusu veya biletleme (doluluk, satış eğrisi, no-show) gibi hedefinize uygun özel prompt şablonu hazırlar.</li>
+            <li><strong>Örnek biçimi:</strong> Sentetik verinin standart <strong>CSV</strong> mi yoksa veritabanı için <strong>SQL (Oracle CREATE TABLE + INSERT)</strong> biçiminde mi üretileceğini belirler.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Eylem Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Prompt'u oluştur →</code>: Veri pasaportunu, kolon açıklamalarını ve sentetik örnek satırları tek bir hazır AI prompt'u haline getirir ve aşağıdaki metin kutusuna döker.</li>
+            <li><code>Sahte veriyi yenile</code>: Kolon kurallarını değiştirmeden, yeni bir rastgele tohumla (seed) tamamen farklı sentetik örnek değerler üretir.</li>
+            <li><code>+ İlişkili dosya ekle</code>: Birden fazla ilişkili tablo (örn. Biletler + Müşteriler) yüklemenizi sağlar. Ortak anahtarları (Foreign Key) otomatik bulur ve <strong>aynı gerçek değer her iki tabloda da aynı sahte değere dönüşür</strong>; böylece AI'nın yazacağı <code>JOIN</code> bozulmaz.</li>
+            <li><code>Kontrol et ve kopyala</code>: Hazır prompt'u panoya kopyalamadan önce "Kalan Risk İnceleme" penceresini açar; gözden kaçan bir kişisel veri varsa son kez onaylamanızı sağlar.</li>
+            <li><code>Maskelenmiş Excel indir (.xlsx)</code> / <code>Maskelenmiş CSV indir</code>: "Gerçek dosyayı maskele" modunda tüm dosyanın temizlenmiş ve anonimleştirilmiş halini bilgisayarınıza indirir.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>No-Show Paneli Kontrolleri</strong></dt>
+        <dd>
+          <p>Biletleme ve etkinlik operasyonlarında "Bilet Satış Tablosu" ile "Turnike Giriş Tablosu"nu eşleştirmek için kullanılır. Tekil bilet anahtarlarını, etkinlik kolonlarını ve iptal/iade durumlarını belirleyerek no-show analizi için eksiksiz prompt üretir.</p>
+        </dd>
+      </dl>
+    </section>
+
+    <!-- BÖLÜM 7 -->
+    <section id="tekillestirme">
+      <h2>7. Tekilleştirme &amp; Anti-Join (Liste Çıkarma)</h2>
+      <p>Yüz binlerce satırlık müşteri, sipariş, CRM veya envanter tablolarındaki mükerrer kayıtları tarayıcınızda donma veya çökme yaşamadan temizleyin ve iki farklı listeyi birbiriyle çapraz karşılaştırarak farklarını ayıklayın.</p>
+
+      <h3>Genel Mimari ve Güvenlik İlkeleri</h3>
+      <ul>
+        <li><strong>Sıfır Ağ / %100 İstemci Tarafı:</strong> Milyon satırlık dev dosyalarınız kesinlikle harici bir sunucuya yüklenmez (0 network fetch). Tüm işlemler bilgisayarınızın işlemcisi ve tarayıcı belleği (RAM) içinde çalışır.</li>
+        <li><strong>Int32Array Sözlük Kodlaması:</strong> Yüz binlerce metin hücresini JavaScript nesneleri olarak saklamak tarayıcının çöp toplayıcısını (Garbage Collector) kilitler ve sekmeyi dondurur. Masko, benzersiz metinleri bir kez sözlüğe alıp tablodaki hücreleri 32-bit tamsayı indeksleriyle kodlar; böylece bellek tüketimi 10 kat düşer.</li>
+        <li><strong>Sanal Kaydırma (Virtual Scrolling):</strong> Ekranda 500.000 satır olsa bile DOM'a yalnızca o an ekranda görünen 30-40 satır basılır; tablo 60 FPS hızında kayar.</li>
+      </ul>
+
+      <h3>Üst Çubuk (Top Bar) Kontrolleri ve Güvenlik Ayarları</h3>
+      <dl>
+        <dt><strong>Genel Oturum ve Dışa Aktarma Kontrolleri</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Yeni oturum</code>: Mevcut çalışmayı ve bellekteki tabloları temizleyerek dosya yükleme (dropzone) ekranına geri döner.</li>
+            <li><code>Çalışılan dosya</code>: Oturumda birden fazla dosya yüklüyse (örn. Anti-Join karşılaştırması sonrası veya birden fazla liste eklendiğinde) ana tabloda hangi tablonun inceleneceğini seçer.</li>
+            <li><code>Biçim (Excel vs CSV)</code>:
+              <ul>
+                <li><em>Excel (.xlsx):</em> Doğrudan biçimlendirilmiş Microsoft Excel çalışma kitabı olarak indirir.</li>
+                <li><em>CSV:</em> Virgülle ayrılmış hafif metin formatında kaydeder. Akışlı dışa aktarım (streamExportClean) sayesinde 500.000 satırlık dosyalar bellek şişmesi olmadan parça parça indirilir.</li>
+              </ul>
+            </li>
+            <li><code>Formül Güvenliği (Kritik OWASP Koruması)</code>:
+              <ul>
+                <li><em>Güvenli Metin (Safe - Önerilen):</em> Tablolarda <code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>, sekme (tab) veya satır başı karakterleriyle başlayan hücrelerin başına otomatik olarak <code>'</code> (tek tırnak) ekler. Bu sayede dosya Microsoft Excel veya LibreOffice'te açıldığında formül enjeksiyonu (CSV/DDE Injection) saldırılarına ve istem dışı kod çalıştırılmasına karşı korunur.</li>
+                <li><em>Ham Veri (Raw):</em> Hücreleri hiçbir değişikliğe uğratmadan bayt düzeyinde kaydeder. Dosya doğrudan bir SQL veritabanına aktarılacaksa veya formüllerin formül olarak çalışması gerekiyorsa bu mod seçilir.</li>
+              </ul>
+            </li>
+            <li><code>Rehber</code>: Bu kullanım kılavuzunu ayrı bir sekmede açar.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Ana Sekmeler (2 Modlu Çalışma Alanı)</h3>
+      <p>Tekilleştirme arayüzü kullanıcıyı yormayan iki ana sekmeye ayrılmıştır:</p>
+      <ul>
+        <li><strong>[Tek Dosyada Tekilleştir]:</strong> Tek bir tablodaki kopyaları analiz etmek, filtrelemek ve temizlemek için kullanılır.</li>
+        <li><strong>[Listeden Liste Çıkar]:</strong> İki veya üç tablo arasında küme farkı almak (A − B) için kullanılan görsel stüdyodur.</li>
+      </ul>
+
+      <hr style="border:none; border-top:1px dashed var(--guide-rule); margin:24px 0;">
+
+      <h3>Sekme 1: Tek Dosyada Tekilleştirme</h3>
+
+      <h4>1. Hızlı Kontrol Kartı (Hero Card — Tek Tıkla Çözüm)</h4>
+      <p>Dosyanız yüklendiğinde en üstte beliren bu kart, karmaşık satır seçme adımlarını atlayarak iki adımda temiz dosya almanızı sağlar:</p>
+      <ol>
+        <li><strong>1. Tekilleştirme Sütunu:</strong> Mükerrerliği hangi bilginin belirleyeceğini seçin (Örn: <code>TCKN</code>, <code>E-posta</code>, <code>Telefon</code> veya <code>Müşteri No</code>).</li>
+        <li><strong>2. Kural Seçimi:</strong>
+          <ul>
+            <li><em>İlk kaydı sakla, kopyaları sil (first):</em> Kronolojik veya dosya sırasına göre ilk görülen satır orijinal kabul edilir, sonradan gelen tüm tekrarlar silinir.</li>
+            <li><em>Son kaydı sakla, kopyaları sil (last):</em> En son eklenen veya en güncel tarihli satır korunur, önceki eski kopyalar silinir.</li>
+            <li><em>Tüm kopyaları sil (none / all):</em> Kopya grubu olan satırların tamamı tablodan atılır; geriye yalnızca baştan beri hiç tekrar etmemiş tekil kayıtlar kalır.</li>
+          </ul>
+        </li>
+      </ol>
+      <dl>
+        <dt><strong>Hızlı Kart Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Temiz Dosyayı İndir (Yeşil Buton)</code>: Seçtiğiniz sütun ve kuralı arka planda tek adımda işletir, mükerrerleri ayıklar ve temizlenmiş dosyayı hemen bilgisayarınıza indirir.</li>
+            <li><code>Silinenler Raporu</code>: Elenen satırları, hangi kopya grubuna ait olduklarını ve hangi kural nedeniyle (örn. <em>"İlk kayıtlar tutuldu: TCKN"</em>) silindiklerini gerekçeli bir denetim raporu olarak kaydeder.</li>
+          </ul>
+        </dd>
+        <dt><strong>Gelişmiş Seçenekler &amp; Araçlar (Akordeon)</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Benzer Kayıtları İncele (Fuzzy)</code>: Birebir aynı olmayan (örn. "Ahmet Yılmaz" ile "Ahmet Yilmaz" veya bir harfi eksik şirket unvanları) yazım farklarını Levenshtein ve Jaro-Winkler algoritmalarıyla tarar. %85, %90 veya %95 benzerlik eşiği seçebilirsiniz. <em>Hiçbir kayıt otomatik silinmez</em>; her çift yan yana gösterilir, ikinci kaydı silme kararı size bırakılır.</li>
+            <li><code>Tarifi İndir</code>: Seçtiğiniz sütunları ve tekilleştirme kurallarını gerçek veri içermeyen saf bir JSON reçetesi (<code>.recipe.json</code>) olarak kaydeder.</li>
+            <li><code>Tarif Yükle</code>: Daha önce kaydettiğiniz JSON reçetesini yeni gelen haftalık dosyalara tek tıkla uygular.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h4>2. Sütun Bandı: Sütun Ekle ve Çıkar</h4>
+      <ul>
+        <li><strong>Sütun Sekmeleri:</strong> Tablonuzdaki tüm sütunlar yatay bir şerit halinde listelenir. Her sekmenin üzerinde o sütundaki mükerrer sayısı yazar (örn. <code>14 kopya</code> veya <code>temiz</code>). Bir sekmeye tıkladığınızda o sütun aktif analiz sütunu olur.</li>
+        <li><strong>Sütun ekle:</strong> Tablonun sonuna yeni sütun ekler. Yüklediğiniz dosya değişmez; yeni sütun indirilen dosyaya yazılır ve tekilleştirme anahtarı olarak seçilebilir.
+          <ul>
+            <li><em>Sütunları birleştir:</em> Seçtiğiniz sütunları tıklama sırasıyla, seçtiğiniz ayraçla birleştirir (örn. ad + soyad → "Ahmet Yılmaz"). Boş parça atlanır.</li>
+            <li><em>Tekrar sayısı:</em> Seçilen sütundaki değerin dosyadaki tüm satırlarda kaç kez geçtiğini yazar. Karşılaştırma sütun türüne göredir; telefon sütununda "0532 111 22 33" ile "+90 532 111 22 33" aynı sayılır. Temizlikten sonra da ilk sayıyı gösterir.</li>
+            <li><em>Kopya grubu no:</em> Aynı değeri taşıyan satırlara ilk görünüş sırasıyla ortak numara verir; tek geçen değer boş kalır. Excel'de bu sütuna göre sıralarsanız kopyalar yan yana gelir.</li>
+            <li><em>Sabit değer:</em> Her satıra aynı değeri yazar (örn. <code>KAYNAK = Kampanya A</code>). Dosyaları birleştirmeden önce satırların nereden geldiğini işaretler.</li>
+            <li><em>Boş sütun:</em> Yalnız başlık ekler; dosya sonra doldurulmak üzere hazırlanır.</li>
+          </ul>
+        </li>
+        <li><strong>Sütunu çıkarmak:</strong> Tablo başlığındaki ✕ ya da "Sütunlar" panelindeki <code>Çıkar</code>, sütunu tablodan ve indirilen dosyadan çıkarır. Veri silinmez; panelde <code>Geri getir</code> veya <code>Tümünü geri getir</code> ile geri gelir. Çıkarılan sütun yine tekilleştirme anahtarı olabilir: örneğin TCKN'ye göre tekilleştirip dosyayı TCKN sütunu olmadan indirebilirsiniz.</li>
+        <li><strong>Tarifte sütunlar:</strong> <code>Tarifi İndir</code> eklenen ve çıkarılan sütunları da kaydeder. Tarifi başka bir dosyaya yüklediğinizde aynı sütunlar kaynak sütun adlarına göre yeniden kurulur; kaynak sütunu o dosyada olmayan tanım atlanır ve size bildirilir.</li>
+      </ul>
+
+      <h4>3. Tablo Filtre Çubuğu (Metin Arama &amp; Kopya Filtresi)</h4>
+      <dl>
+        <dt><strong>1. Satır: Canlı Metin Arama</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Satır ara</code> kutusu: Tabloda belirli bir kelimeyi (örn. bir şirket adı, şehir veya hata kodu) canlı olarak arar. Enter tuşuna basıldığında beklemeden hemen arar.</li>
+            <li><code>Sütun</code> seçici: Aramanın tüm görünür sütunlarda mı yoksa yalnızca seçilen tek bir sütunda mı yapılacağını belirler.</li>
+            <li><code>Büyük/küçük harfe duyarlı</code> kutusu: Harf duyarlılığı aramasını açar/kapatır (Türkçe İ/ı, Ş/ş kurallarına tam uyumludur).</li>
+            <li><code>Arama Sonuçlarını İşaretle</code> butonu: Arama kutusuna yazılan metinle eşleşen satırları topluca silinecek olarak işaretler (<code>del</code>). Arama kutusu boşken pasiftir; arama yapıldığında üzerinde kaç satır bulunduğu yazar (örn: <em>"Aramada Bulunanları İşaretle (12 satır)"</em>).</li>
+          </ul>
+        </dd>
+
+        <dt><strong>2. Satır: Mükerrer Filtresi</strong></dt>
+        <dd>
+          <ul>
+            <li><code>[x] Sadece kopyalar</code> anahtarı: Tablodaki tekil satırları gizler; ekranda yalnızca kopya kümelerini bırakır.</li>
+            <li><code>Ölçüt</code> seçici:
+              <ul>
+                <li><em>Aktif sütun:</em> Yalnızca yukarıda seçili sütundaki tekrarları filtreler (COUNTIF mantığı).</li>
+                <li><em>Kimlik — herhangi biri eşleşsin:</em> Seçilen kimlik sütunlarından (örn. E-posta, Telefon, TCKN) <strong>herhangi biri</strong> eşleşirse satırları aynı kişi sayar (Union-Find zincirleme kümeleme).</li>
+                <li><em>Grup — hepsi birden eşleşsin:</em> Seçilen sütunların <strong>tamamı birden</strong> aynı ise kopya sayar (örn. Ad + Soyad + Doğum Tarihi).</li>
+              </ul>
+            </li>
+            <li><code>Fazlalıkları işaretle</code> butonu: Çoklu sütun ölçütlerinde küme başına 1 kazanan satır bırakıp geri kalan fazla kopyaları tek tıkla silinecek olarak işaretler.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h4>4. Tablo Alanı ve COUNTIF Analiz Paneli</h4>
+      <ul>
+        <li><strong>Sol Panel (Veri Tablosu):</strong> Ham satırlar görüntülenir. Satır başındaki onay kutucuklarına tıklayarak istediğiniz satırları elle silinecek olarak işaretleyebilir veya kaldırabilirsiniz. Silinecek satırlar kırmızı çizgiyle vurgulanır.</li>
+        <li><strong>Sağ Panel (Kopya Grupları):</strong> Seçilen sütunda hangi değerin kaç defa geçtiğini en çok tekrarlanandan en aza doğru listeler. Bir değere tıklandığında sol tablodaki ilgili satırlara anında kaydırır (<code>scrollToRow</code>).</li>
+      </ul>
+
+      <h4>5. Alt Aksiyon Barı (Detaylı Manuel Müdahale)</h4>
+      <dl>
+        <dt><strong>Hızlı Seçim Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>İlkleri Tut</code>: Kopya kümelerindeki ilk satırı korur, 2. ve sonraki tekrarları silinecek olarak işaretler.</li>
+            <li><code>2.leri Tut</code>: Özellikle A/B testlerinde veya onay mekanizmalarında kümenin 2. satırını koruyup diğerlerini işaretler.</li>
+            <li><code>Sonları Tut</code>: En son eklenen satırı korur, önceki kopyaları işaretler.</li>
+            <li><code>Hepsini Sil</code>: Kopya kümesine giren tüm satırları işaretler (geriye yalnızca tekiller kalır).</li>
+            <li><code>İşaretlileri Onayla</code>: Kırmızı ile işaretlenmiş satırları kalıcı olarak eler.</li>
+            <li><code>Tümünü Geri Al</code>: Yapılan tüm silme işaretlerini sıfırlar, tabloyu orijinal haline döndürür.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <hr style="border:none; border-top:1px dashed var(--guide-rule); margin:24px 0;">
+
+      <h3>Sekme 2: Listeden Liste Çıkar (Anti-Join Stüdyosu: A − B)</h3>
+      <p>Pazarlama kampanyalarında, bülten gönderimlerinde veya stok mutabakatlarında en sık ihtiyaç duyulan <em>"Elimdeki ana listeden diğer listedeki kayıtları düş"</em> işlemini görsel olarak sunar.</p>
+      
+      <h4>Çalışma Mantığı ve Matematiksel İşleçler</h4>
+      <ul>
+        <li><code>A − B (Fark / Anti-Join)</code>: Ana listede (A) bulunan ancak ikinci listede (B - kara liste, eski müşteriler, iptaller vb.) yer alan tüm kayıtları çıkarır.</li>
+        <li><code>A ∩ B (Kesişim / Intersection)</code>: Yalnızca her iki dosyada birden ortak bulunan satırları ayıklar.</li>
+        <li><code>A ∪ B (Birleşim / Union)</code>: İki listeyi alt alta birleştirir ve aralarındaki mükerrerleri tekilleştirir.</li>
+        <li><code>A − (B ∪ C) (Üç Dosyalı Çıkarma)</code>: Ana tablonuzdan aynı anda iki farklı hariç tutma listesini (örn. hem bülten aboneliğinden çıkanları hem de kara listedeki numaraları) tek seferde düşmenizi sağlar.</li>
+      </ul>
+
+      <h4>Anti-Join Stüdyo Kontrolleri ve Butonları</h4>
+      <dl>
+        <dt><strong>Kartlar ve Seçiciler</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Ana Liste (A) Kartı:</strong> Halihazırda yüklü olan tablonuzun adını, satır sayısını gösterir. Buradan eşleştirme yapılacak birincil anahtar sütun (örn. <code>Telefon</code> veya <code>TCKN</code>) seçilir. Dilerseniz <em>"Farklı A Dosyası Seç"</em> diyebilirsiniz.</li>
+            <li><strong>Çıkarılacak Liste (B) Kartı:</strong> Sürükle-bırak veya dosya seçici ile ikinci CSV/Excel dosyasını eklersiniz. Sistem sütun başlıklarını okur ve eşleşecek B sütununu seçmenizi sağlar. <code>B'yi Kaldır</code> veya <code>A ↔ B Değiştir</code> butonları mevcuttur.</li>
+            <li><strong>Eşleşme Hassasiyeti Seçici:</strong>
+              <ul>
+                <li><em>Normalleştirilmiş (Önerilen):</em> Türkçe karakter duyarlılığını (İ/ı, Ş/ş), baştaki/sondaki boşlukları ve küçük/büyük harf farklarını otomatik temizler. Telefonlardaki parantez, boşluk ve tireleri atlayarak sadece rakamları eşleştirir.</li>
+                <li><em>Büyük/küçük harfe duyarlı:</em> Büyük ve küçük harfleri farklı kabul eder (örn. <code>Kod-A</code> ile <code>kod-a</code> eşleşmez).</li>
+                <li><em>Tam metin:</em> Noktasına ve boşluğuna kadar birebir bayt seviyesinde eşleşme arar.</li>
+              </ul>
+            </li>
+          </ul>
+        </dd>
+
+        <dt><strong>Eylem Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Karşılaştır ve Önizle (Mavi Buton)</code>: Karşılaştırmayı çalıştırır ve sonuçları aşağıdaki sonuç kartına döker.</li>
+            <li><code>Filtrelenmiş Listeyi İndir (A − B) (Yeşil Buton)</code>: B listesindekiler elenmiş temiz A listesini doğrudan Excel veya CSV olarak indirir.</li>
+            <li><code>Kalanlarla Tekilleştirmeye Geç →</code>: Fark çıkarma işleminden arta kalan satırları 1. Sekmeye (Tekilleştirme) aktarır; böylece üzerinde kopyaları temizlemeye devam edebilirsiniz.</li>
+            <li><code>Eşleşen Satırları İşaretle</code>: B listesiyle eşleşen satırları ana tabloda kırmızı işaretli hale getirir.</li>
+            <li><strong>Gelişmiş Seçenekler (C listesi):</strong> Üçüncü bir dosya (C) ekleyerek <code>A − (B ∪ C)</code> üçlü çıkarma kuralını devreye sokar.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryoları</h3>
+      <div class="example-scenario">
+        <h4>Senaryo 1: E-Ticaret Kampanyası Öncesi Mükerrer Müşterileri Ayıklama (Bütçe &amp; İtibar Kurtarma)</h4>
+        <p><strong>İş Problemi:</strong> Bir perakende şirketi, büyük indirim haftası öncesinde CRM ve e-ticaret altyapısından 350.000 satırlık müşteri listesi çeker. Ancak aynı müşteriler web'den, mobil uygulamadan ve fiziksel mağazadan ayrı kayıt açtığı için yüz binlerce mükerrer telefon ve TCKN kaydı oluşmuştur. Her mükerrer SMS hem kampanya bütçesini iki katına çıkarır hem de aynı müşteriye aynı anda 3 SMS gitmesine yol açarak marka itibarını zedeler.</p>
+        <ol>
+          <li>Müşteri listenizi (Excel veya CSV) sürükleyip bırakın.</li>
+          <li>En üstteki <strong>Hızlı Kontrol Kartı (Hero Card)</strong> üzerinden:
+            <ul>
+              <li><strong>1. Tekilleştirme Sütunu:</strong> <code>Telefon</code> veya <code>TCKN</code> seçin.</li>
+              <li><strong>2. Kural:</strong> <code>İlk kaydı sakla, kopyaları sil (first)</code> seçin (en eski ve doğrulanmış ilk kayıt korunur).</li>
+            </ul>
+          </li>
+          <li>Yeşil renkli <code>Temiz Dosyayı İndir</code> butonuna basın.</li>
+          <li><strong>Sonuç:</strong> 350.000 satırdan 120.000 mükerrer kayıt saniyeler içinde elenir. Excel formül enjeksiyonu (OWASP CSV Injection) korumasıyla hücrelerin başına otomatik <code>'</code> eklenmiş temiz liste indirilir ve SMS bütçesinde binlerce lira tasarruf sağlanır. Elenen kayıtlar <code>Silinenler Raporu</code> butonuyla denetim için arşivlenebilir.</li>
+        </ol>
+
+        <h4>Senaryo 2: İYS (İleti Yönetim Sistemi) Ret Listesini Kampanya Kitlesinden Düşme (Anti-Join: A − B)</h4>
+        <p><strong>İş Problemi:</strong> Pazarlama ekibinin elinde 200.000 kişilik genel promosyon listesi (A) vardır. Ancak mevzuat gereği İYS'den çekilen 15.000 kişilik "SMS İznini İptal Edenler / Kara Liste" (B) dosyasındaki kişilere kesinlikle SMS gönderilmemelidir; aksi takdirde her izinsiz SMS için ağır KVKK ve idari para cezası uygulanır.</p>
+        <ol>
+          <li>Üstten <strong>[Listeden Liste Çıkar]</strong> sekmesine geçin.</li>
+          <li><strong>Ana Liste (A):</strong> Yüklü olan kampanya listenizde anahtar sütun olarak <code>Telefon</code> seçin.</li>
+          <li><strong>Çıkarılacak Liste (B):</strong> İYS ret listenizi yükleyin ve eşleşecek sütun olarak <code>Telefon</code> seçin.</li>
+          <li><strong>Eşleşme Hassasiyeti:</strong> <code>Normalleştirilmiş</code> seçin (böylece <code>0532...</code>, <code>+90 532...</code> veya boşluklu telefon formatları otomatik eşitlenir).</li>
+          <li>Mavi <code>Karşılaştır ve Önizle</code> butonuna basın.</li>
+          <li><strong>Sonuç:</strong> İzin iptali yapmış 15.000 kişi ana listeden hatasız düşülür. Yeşil <code>Filtrelenmiş Listeyi İndir (A − B)</code> butonuna basılarak yasal izinli 185.000 kişilik temiz kitle doğrudan indirilir ve ceza riski sıfırlanır.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 8 -->
+    <section id="csv-bolme">
+      <h2>8. CSV Bölme İstasyonu (csv-bolme/)</h2>
+      <p>Excel'in 1.048.576 satır sınırını aşan, CRM/ERP sistemlerinin tek seferde kabul etmediği veya veri tabanlarının dosya boyutu limitine takılan devasa CSV/TXT dosyalarını bilgisayarınızı dondurmadan açılabilir parçalara bölün.</p>
+
+      <h3>Nasıl Çalışır? (Bellek Güvenliği &amp; Akış Mimarisi)</h3>
+      <ul>
+        <li><strong>Sıfır Bellek Taşması (Stream Slicing):</strong> Klasik araçlar 5 GB'lık bir CSV dosyasını tek seferde tarayıcı belleğine (RAM) yüklemeye çalışır ve sekmeyi çökerterek kilitler. Masko'nun bölme motoru, dosyayı <code>ArrayBuffer</code> veya tam metin olarak belleğe almaz; hafif parça tarayıcısı ile satır sonlarını bayt düzeyinde tespit eder.</li>
+        <li><strong>Başlık Satırı Bütünlüğü:</strong> Orijinal dosyanın en başındaki kolon başlığı satırı (Header) otomatik olarak hafızaya alınır ve üretilen <strong>her yeni parçanın en başına</strong> kusursuz şekilde yeniden yazılır. Böylece hiçbir parça başlığı kaybetmez.</li>
+        <li><strong>Doğrudan Klasöre Yazma (File System Access API):</strong> Desteklenen Chromium tarayıcılarda parçalar tarayıcıda biriktirilmeden, doğrudan bilgisayarınızda seçtiğiniz yerel bir klasöre (<code>dosya_parca_1.csv</code>, <code>dosya_parca_2.csv</code>...) teker teker yazılır. API desteklenmiyorsa parçalar tek tıkla ZIP arşivi olarak teslim edilir.</li>
+      </ul>
+
+      <h3>Dosya Özeti ve Tespit Paneli</h3>
+      <ul>
+        <li><code>Boyut</code>, <code>Satır</code>, <code>Sütun</code> ve <code>Ayraç</code>: Yüklenen dosyanın toplam bayt boyutu, tahmini satır sayısı, sütun adedi ve tespit edilen ayracı (virgül, noktalı virgül, sekme) otomatik gösterilir.</li>
+        <li><code>Başlık Sütun Çipleri</code>: Dosyada algılanan tüm kolon adları etiket olarak listelenir.</li>
+        <li><code>Formül Uyarısı</code>: Dosyada Excel formül enjeksiyonu riski taşıyan (<code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>) hücreler varsa sarı uyarı kutusuyla satır sayısı raporlanır.</li>
+      </ul>
+
+      <h3>Bölme Ayarları ve Kontrolleri</h3>
+      <dl>
+        <dt><strong>Bölme Parametreleri</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Çıktı biçimi (CSV vs Excel)</code>:
+              <ul>
+                <li><em>CSV:</em> Doğrudan akışlı olarak yazılır; gigabaytlarca büyüklükteki dosyalar için en hızlı ve güvenli yöntemdir.</li>
+                <li><em>Excel (.xlsx):</em> Her parçayı ayrı bir Excel çalışma kitabı olarak hazırlar. Excel formatı bellekte oluşturulduğu için güvenli üst sınır parça başına 100.000 satır veya 32 MB'tır.</li>
+              </ul>
+            </li>
+            <li><code>Parça başına satır</code>: Her dosyada yer alacak maksimum veri satırı sayısı (Varsayılan: <code>1.000.000</code> — Excel'in 1.048.576 sınırının hemen altı).</li>
+            <li><code>Parça başına en fazla boyut (MB)</code>: Her parçanın ulaşabileceği maksimum disk boyutu (Örn: <code>50 MB</code>). <code>0</code> girilirse boyut sınırı uygulanmaz. <em>İki sınır birlikte çalışır: Hangisi önce dolarsa parça orada kapatılıp yeni parçaya geçilir.</em></li>
+            <li><code>Çıktı ayracı</code>:
+              <ul>
+                <li><em>Noktalı virgül (;) — Önerilen:</em> Türkçe Excel'in dosyayı çift tıklandığında metin sihirbazı sormadan doğrudan sütunlara ayırmasını sağlar.</li>
+                <li><em>Virgül (,):</em> Uluslararası standart CSV formatı.</li>
+                <li><em>Sekme (\t):</em> Tab-delimited (TSV) formatı.</li>
+                <li><em>Kaynaktaki gibi bırak:</em> Girdi dosyasının kendi orijinal ayracını aynen korur.</li>
+              </ul>
+            </li>
+          </ul>
+        </dd>
+
+        <dt><strong>Çalıştırma Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Klasör Seç ve Böl (Mavi Buton)</code>: Bilgisayarınızdan parçaların kaydedileceği klasörü seçmenizi ister ve bölme işlemini anında başlatır.</li>
+            <li><code>Durdur (Kırmızı Buton)</code>: Devam eden bölme sürecini o anki parçada anında durdurur; yazılmış parçalar korunur.</li>
+            <li><code>Başka dosya</code>: Çalışmayı sıfırlayarak yeni bir dosya yükleme ekranına döner.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: ERP'den Alınan 5 Milyon Satırlık E-Fatura / Turnike Dökümünü Excel Uyumlu Parçalara Bölme</h4>
+        <p><strong>İş Problemi:</strong> Kurumsal SAP veya Oracle ERP sisteminden yıllık tüm satış ve e-fatura hareketlerini içeren 5 milyon satırlık (300 MB) devasa bir CSV dökümü alınır. Muhasebe ve denetim uzmanları bu dosyayı incelemek üzere Microsoft Excel'de açmaya çalıştığında Excel'in katı <strong>1.048.576 satır sınırı</strong> nedeniyle 4 milyon satır sessizce kesilip kaybolur ve Excel sekmeyi kilitler.</p>
+        <ol>
+          <li>Dev CSV dosyasını ekrana sürükleyip bırakın (sistem dosyayı RAM'e yığmadan saniyeler içinde satır sayısını ve ayraç yapısını algılar).</li>
+          <li>Bölme parametrelerini belirleyin:
+            <ul>
+              <li><code>Çıktı biçimi:</code> <em>CSV</em> seçin (akışlı ve en hızlı yöntem).</li>
+              <li><code>Parça başına satır:</code> <code>1.000.000</code> olarak bırakın (Excel sınırının hemen altı).</li>
+              <li><code>Çıktı ayracı:</code> <em>Noktalı virgül (;)</em> seçin (böylece muhasebe ekibi çift tıkladığında Türkçe Excel metin sihirbazı sormadan doğrudan kolonlara ayırır).</li>
+            </ul>
+          </li>
+          <li>Mavi <code>Klasör Seç ve Böl</code> butonuna basarak bilgisayarınızda parçaların kaydedileceği bir klasör seçin.</li>
+          <li><strong>Sonuç:</strong> Tarayıcı kesinlikle donmadan, saniyeler içinde her birinin en başında orijinal kolon başlıkları eksiksiz bulunan 5 adet Excel uyumlu CSV dosyası (<code>parca_1.csv</code> ... <code>parca_5.csv</code>) oluşur. Muhasebe ekibi tüm veriyi tek bir satır dahi kaybetmeden Excel'de inceleyebilir.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 9 -->
+    <section id="pdf-istasyonu">
+      <h2>9. Çevrimdışı Güvenli PDF İstasyonu (pdf-istasyonu/)</h2>
+      <p>İhaleler, sözleşmeler, bilançolar ve kimlik belgeleri gibi gizli kurumsal PDF dosyalarınızı harici SaaS sitelerine (iLovePDF, SmallPDF vb.) yüklemeden; tarayıcınızın içinde %100 çevrimdışı ve güvenli olarak düzenleyin, bölün ve birleştirin.</p>
+
+      <h3>Temel Güvenlik Garantisi &amp; Önemli Uyarı</h3>
+      <ul>
+        <li><strong>Sıfır Ağ / %100 İstemci Belleği:</strong> Piyasadaki popüler çevrimiçi PDF araçları yüklediğiniz sözleşmeleri kendi bulut sunucularına çeker. Masko PDF İstasyonu ise açık kaynaklı <code>pdf-lib</code> ve <code>pdf.js</code> kütüphaneleriyle doğrudan tarayıcınızın yerel belleğinde çalışır; internet bağlantınızı kesseniz bile tüm PDF işlemleri eksiksiz devam eder (0 ağ çağrısı).</li>
+        <li><strong>Kalıcı Karartma Uyarısı:</strong> PDF'te bir metnin üstüne siyah kutu çizmek altındaki metni silmez; metin fareyle seçilip kopyalanabilir kalır. Başka bir programda kutu çizerek gizlemeyin; <em>Karart</em> sekmesini kullanın. Orada kutu içeren sayfa resme çevrilir ve metin dosyadan tamamen çıkar.</li>
+      </ul>
+
+      <h3>1. Sekme: Sayfa Düzenle, Böl &amp; Döndür</h3>
+      <dl>
+        <dt><strong>Üst Kontrol Barı</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Başka Dosya Seç</code>: Yüklü PDF belgesini değiştirir.</li>
+            <li><code>↻ Tümünü 90° Döndür</code>: Belgedeki tüm sayfaları tek tıkla saat yönünde 90 derece çevirir (ters taranmış evraklar için).</li>
+            <li><code>Değişiklikleri Sıfırla</code>: Yapılan tüm döndürme ve silme işlemlerini iptal ederek orijinal belge durumuna döner.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Hızlı İşlemler &amp; Ayıklama</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Sayfa Aralığı Çıkar (Metin Kutusu)</code>: <code>1-3, 5, 8-10</code> şeklinde esnek sayfa numaraları yazmanıza imkan tanır.</li>
+            <li><code>Seçili Sayfaları İndir</code>: Kutuda belirttiğiniz aralıktaki sayfaları orijinal belgeden ayıklayarak yeni bir PDF olarak kaydeder.</li>
+            <li><code>Her Sayfayı Ayrı İndir (Zip/Tekil)</code>: Yüzlerce sayfalık bir belgenin her bir sayfasını bağımsız birer PDF dosyası haline getirir ve hepsini tek bir ZIP arşivi içinde teslim eder.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Sayfa Kartları Izgarası (Grid Görünümü)</strong></dt>
+        <dd>
+          <ul>
+            <li>Belgenin her sayfası ayrı bir küçük kart olarak ekrana dizilir.</li>
+            <li>Her kartın üzerinde yer alan <code>↻ Döndür</code> butonu ile yalnızca o sayfayı 90° çevirebilir; <code>🗑️ Sil</code> butonu ile gereksiz veya boş sayfaları belgeden kalıcı olarak çıkarabilirsiniz.</li>
+            <li><code>Düzenlenmiş PDF'i İndir (Yeşil Buton)</code>: Döndürülen, sayfaları ayıklanan ve istenmeyen kısımları atılan nihai PDF belgesini bilgisayarınıza indirir.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>2. Sekme: Birden Fazla PDF'i Birleştir (Merge)</h3>
+      <dl>
+        <dt><strong>Kontroller ve Sıralama</strong></dt>
+        <dd>
+          <ul>
+            <li><code>+ Dosya Ekle</code>: Bilgisayarınızdan birleştirilmek istenen yeni PDF dosyalarını listeye ekler (sürükle-bırak desteklenir).</li>
+            <li><code>Sürükle-Bırak Sıralama</code>: Eklenen PDF belgelerini listede yukarı/aşağı sürükleyerek nihai belgedeki birleşme sırasını özgürce belirleyebilirsiniz.</li>
+            <li><code>Listeyi Temizle</code>: Eklenmiş tüm dosyaları listeden kaldırır.</li>
+            <li><code>Tümünü tek PDF olarak birleştir ve indir (Mavi Buton)</code>: Listedeki tüm belgeleri sayfalarını ve çözünürlüklerini kaybetmeden tek bir ciltte birleştirir.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Diğer Sekmeler</h3>
+      <dl>
+        <dt><strong>Düzenle ve böl (ek)</strong></dt>
+        <dd>Sayfalar küçük resim olarak görünür; kartları sürükleyerek sırayı değiştirebilir, araya boş sayfa ekleyebilirsiniz.</dd>
+        <dt><strong>Resimden PDF</strong></dt>
+        <dd>JPG/PNG fotoğrafları (telefonla çekilmiş belge dahil) tek PDF yapar. Sayfa boyutu, yön ve kenar payı seçilir; telefonun döndürme bilgisi dikkate alınır.</dd>
+        <dt><strong>Sayfa numarası</strong></dt>
+        <dd>Altı konumdan birine "Sayfa 1 / 12" ya da "1. sayfa" gibi numara ekler; ilk sayfa (kapak) atlanabilir. <code>Özel…</code> seçeneğiyle kendi metninizi yazabilirsiniz (örn. "Ek-2 · Sayfa {n} / {toplam}"); Türkçe harfler doğru yazılır.</dd>
+        <dt><strong>Filigran</strong></dt>
+        <dd>"GİZLİ" gibi bir metni ya da logo görselini sayfalara yarı saydam basar. Açı, saydamlık, boyut ve döşeme seçilir.</dd>
+        <dt><strong>Kırp</strong></dt>
+        <dd>Kenarlardan milimetre olarak keser; önizlemede kesilecek alan gölgelenir. Kırpılan kısım gizlenir ama dosyadan silinmez; gizli bilgi için Karart'ı kullanın.</dd>
+        <dt><strong>Form doldur</strong></dt>
+        <dd>PDF'teki doldurulabilir alanları listeler; değerleri yazıp kaydedersiniz. İsterseniz form düzleştirilir (alanlar sonradan değiştirilemez). "Ayşe Işık" gibi Türkçe değerler düzleştirilmiş formda da doğru görünür.</dd>
+        <dt><strong>PDF'den resim</strong></dt>
+        <dd>Her sayfayı JPG ya da PNG yapar; birden çok sayfa ZIP olarak iner. ZIP içindeki dosya adları Türkçe harfleriyle korunur.</dd>
+        <dt><strong>Karart</strong></dt>
+        <dd><code>Hassas verileri bul</code> TC kimlik, IBAN, e-posta, telefon, kişi adı gibi değerleri ana ekrandaki maskelemeyle aynı kurallarla bulur ve kutular. Kelime arayarak (büyük/küçük harf ve ş-s, ı-i farkı gözetilmez: "ayse" yazınca "AYŞE" de bulunur) ya da fareyle kutu çizerek ekleyebilir, kutuya tıklayıp silebilirsiniz. İndirilen dosyada kutu içeren sayfalar resme çevrilir. Taranmış (metni olmayan) sayfalarda otomatik bulma çalışmaz; önce OCR'dan geçirin ya da elle işaretleyin.</dd>
+        <dt><strong>OCR</strong></dt>
+        <dd>Taranmış PDF'teki Türkçe ve İngilizce yazıyı tanır; sayfa görüntüsü aynen kalır, üstüne görünmez metin katmanı eklenir. Sonuçta metin seçilebilir ve aranabilir. Sayfa başına birkaç saniye sürer.</dd>
+        <dt><strong>Şifre</strong></dt>
+        <dd>Şifresiz PDF'e açılış parolası koyar (AES-256) ve yazdırma, kopyalama, değiştirme izinlerini kısabilir. Şifreli PDF'te parolayı biliyorsanız şifreyi kaldırır; parola kırma yapılmaz.</dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryoları</h3>
+      <div class="example-scenario">
+        <h4>Senaryo 1: Kamu İhalesi Teklif Dosyasındaki Ters Taranmış Bilançoları Düzeltme &amp; Boş Sayfaları Temizleme</h4>
+        <p><strong>İş Problemi:</strong> Şirket avukatları ve ihale sorumluları, kamu ihalesine sunulmak üzere taranmış 45 sayfalık bir teknik şartname ve bilanço PDF'i hazırlar. Ancak tarayıcı hatası nedeniyle 12. ve 18. sayfalardaki mali tablolar yatay (90° ters) çıkmış, ayrıca araya fotokopiden kalma 3 adet tamamen boş sayfa karışmıştır. Bu evrakın gizli mali tablolar ve imza sirküleri içermesi nedeniyle internetteki ücretsiz PDF sitelerine yüklenmesi şirket güvenlik politikalarınca kesinlikle yasaktır.</p>
+        <ol>
+          <li>İhale PDF belgesini <em>Sayfa Düzenle, Böl &amp; Döndür</em> sekmesine bırakın (tüm işlem %100 yerel bellekte gerçekleşir, internete 1 bayt bile gitmez).</li>
+          <li>Ekrana dizilen sayfa ızgarasından:
+            <ul>
+              <li><strong>Döndürme:</strong> Yatay duran sayfaların üzerindeki <code>↻ Döndür</code> butonuna basarak düzgün dikey konuma getirin.</li>
+              <li><strong>Silme:</strong> Araya karışmış boş sayfaların üzerindeki <code>🗑️ Sil</code> butonuna basarak gereksiz sayfaları belgeden ayıklayın.</li>
+            </ul>
+          </li>
+          <li>Yeşil <code>Düzenlenmiş PDF'i İndir</code> butonuna basın.</li>
+          <li><em>Alternatif (Belirli Sayfaları Çıkarma):</em> İhale komisyonuna sadece ilk 10 sayfa ile son onay sayfasını göndermek isterseniz üstteki kutuya <code>1-10, 45</code> yazıp <code>Seçili Sayfaları İndir</code> diyebilirsiniz.</li>
+          <li><strong>Sonuç:</strong> Hiçbir kurumsal sır dışarı sızmadan, resmi makamlara sunulacak kusursuz ve nizami ihale evrakı saniyeler içinde hazır hale gelir.</li>
+        </ol>
+
+        <h4>Senaryo 2: Ana Tedarik Sözleşmesi ile Islak İmzalı Ek Protokolü Tek Dosyada Birleştirme (Merge)</h4>
+        <p><strong>İş Problemi:</strong> Satın alma departmanı, 20 sayfalık dijital ana sözleşme ile taraflarca ıslak imza atılıp taranmış 3 sayfalık ek protokolü ve imza sirkülerini tek bir PDF cildinde birleştirmek zorundadır.</p>
+        <ol>
+          <li>Üstten <strong>Birden Fazla PDF'i Birleştir</strong> sekmesine geçin.</li>
+          <li>Ana sözleşme, ek protokol ve imza sirküleri dosyalarını alana sürükleyip bırakın.</li>
+          <li>Listede dosyaları yukarı/aşağı sürükleyerek resmi işlem sırasına dizin.</li>
+          <li>Mavi <code>Tümünü tek PDF olarak birleştir ve indir</code> butonuna basın.</li>
+          <li><strong>Sonuç:</strong> Tüm sayfalar orijinal çözünürlükleri ve metin kaliteleri korunarak tek bir resmi sözleşme PDF'i olarak teslim alınır.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 10 -->
+    <section id="bulanik-esleme">
+      <h2>10. Bulanık Çapraz Eşleme &amp; Mutabakat (Fuzzy VLOOKUP / bulanik-esleme/)</h2>
+      <p>Excel'in standart <code>DÜŞEYARA / VLOOKUP</code> veya <code>XLOOKUP</code> formüllerinin yazım hataları, kısaltmalar veya yer değiştiren kelimeler nedeniyle <code>#N/A</code> hatası verip çöktüğü iki farklı tabloyu akıllı algoritmalarla eşleştirin.</p>
+
+      <h3>Nasıl Çalışır? (Normalleştirme &amp; Benzerlik Zekâsı)</h3>
+      <ul>
+        <li><strong>Türkçe Kurumsal Ek Normalleştirmesi:</strong> Şirket unvanlarında sıkça geçen ve eşleşmeyi bozan <code>A.Ş.</code>, <code>LTD. ŞTİ.</code>, <code>SAN. VE TİC.</code>, <code>TİC. LTD.</code> gibi yasal ekleri arka planda otomatik temizler; <code>İ/I</code>, <code>Ğ/G</code> gibi harf uyumsuzluklarını çözer.</li>
+        <li><strong>Kelime Sırası Bağımsız Eşleme (Token-Sort):</strong> "Yılmaz Petrol Taşımacılık A.Ş." ile "Taşımacılık Petrol Yılmaz Ltd." kayıtlarını kelimelerine ayırıp sıralayarak %100 benzerlikle eşleştirir.</li>
+        <li><strong>Levenshtein &amp; Jaro-Winkler Hibrit Skoru:</strong> Yazım hatalarını ve eksik harfleri 0 ile 100 arasında bir benzerlik yüzdesiyle puanlar.</li>
+        <li><strong>Çift Kriterli Doğrulama (Unvan + Tutar Toleransı):</strong> Banka ekstresi ile muhasebe kayıtlarını karşılaştırırken sadece unvana bakmaz; iki tarafın tutar sütunlarını da inceler. Belirlediğiniz kuruş farkı toleransı (örn. ±1.00 TL) dahilindeki kayıtları hatasız bağlar.</li>
+      </ul>
+
+      <h3>Ayar Kontrolleri ve Parametreler</h3>
+      <dl>
+        <dt><strong>Tablo ve Kolon Seçimleri</strong></dt>
+        <dd>
+          <ul>
+            <li><code>1. Tablo (Tablo A - Kaynak)</code>: Banka ekstresi, CRM veya sipariş listeniz.</li>
+            <li><code>2. Tablo (Tablo B - Karşılaştırma)</code>: Muhasebe ekstresi, ERP dökümü veya fatura listeniz.</li>
+            <li><code>Tablo A &amp; Tablo B Anahtar Sütun</code>: Karşılaştırılacak isim, şirket unvanı veya açıklama kolonları.</li>
+            <li><code>Tablo A &amp; Tablo B Tutar (Opsiyonel)</code>: Finansal mutabakat yapılacaksa iki tablodaki borç/alacak/tutar sütunları seçilir.</li>
+            <li><code>Tutar Toleransı (±TL)</code>: Banka komisyonları veya kuruş yuvarlamalarından doğan sapma payı (Varsayılan: <code>1.0 TL</code>).</li>
+            <li><code>Benzerlik Eşiği (Slider)</code>: Metinlerin eşleşmiş sayılması için gereken minimum benzerlik yüzdesi (Varsayılan: <code>%80</code>).</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Eylem Butonları ve Çıktılar</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Eşleştirmeyi çalıştır (Mavi Buton)</code>: Karşılaştırmayı yerel olarak çalıştırır ve sonuç kartını açar.</li>
+            <li><code>İstatistik Kartları</code>: Eşleşme Başarısı (%), Tam Eşleşenler (%100), Bulanık Eşleşenler (Fuzzy), A'da Olup B'de Olmayanlar ve B'de Olup A'da Olmayanlar.</li>
+            <li><code>Sonuç Sekmeleri</code>: Tabloda yalnızca bulanık eşleşenleri, tam eşleşenleri veya açıkta kalanları süzerek inceleme imkanı.</li>
+            <li><code>Birleştirilmiş Excel indir (.xlsx)</code>: A ve B kayıtlarını satır satır yan yana getiren, fark sütunlarını ve benzerlik skorlarını içeren tam mutabakat çalışma kitabı.</li>
+            <li><code>CSV indir</code>: Sonuçları hafif metin olarak kaydeder.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: Günlük Banka POS / Havale Ekstresi ile Muhasebe Fatura Listesini Akıllı Eşleştirme</h4>
+        <p><strong>İş Problemi:</strong> Finans birimi her ay sonu banka hesap ekstresi ile muhasebe yazılımındaki (ERP) tahsilat listesini mutabakat için karşılaştırır. Ancak banka ekstresinde açıklama <code>YILMAZ PETROL TAŞIMACILIK SAN. VE TİC. A.Ş.</code> ve tutar <code>14.850,00 TL</code> olarak geçerken; muhasebe cari kartında müşteri adı <code>Taşımacılık Petrol Yılmaz Ltd.</code> ve fatura tutarı EFT/havale komisyonu kesintisi nedeniyle <code>14.849,70 TL</code> yazmaktadır. Excel'deki standart <code>DÜŞEYARA / VLOOKUP</code> formülü kelime sırası ve 30 kuruşluk fark yüzünden <code>#N/A</code> hatası verir ve finans uzmanları binlerce satırı günlerce gözle kontrol etmek zorunda kalır.</p>
+        <ol>
+          <li><strong>Tablo A (Kaynak):</strong> Banka POS/ekstre dosyanızı yükleyin. Anahtar Sütun: <code>Cari Açıklama</code>, Tutar Sütunu: <code>Gelen Tutar</code> seçin.</li>
+          <li><strong>Tablo B (Karşılaştırma):</strong> Muhasebe fatura dökümünüzü yükleyin. Anahtar Sütun: <code>Müşteri Ünvanı</code>, Tutar Sütunu: <code>Fatura Tutarı</code> seçin.</li>
+          <li><strong>Tolerans Ayarları:</strong>
+            <ul>
+              <li><code>Tutar Toleransı (±TL):</code> <code>0.50</code> veya <code>1.00</code> TL girin (banka komisyonu ve kuruş yuvarlamaları için).</li>
+              <li><code>Benzerlik Eşiği:</code> <code>%80</code> olarak belirleyin.</li>
+            </ul>
+          </li>
+          <li>Mavi <code>Eşleştirmeyi çalıştır</code> butonuna basın.</li>
+          <li><strong>Sonuç Analizi:</strong>
+            <ul>
+              <li><em>Token-Sort Zekâsı:</em> Şirket unvanlarındaki kelime sırası ters olmasına ve ticari ekler (A.Ş. vs Ltd.) farklı olmasına rağmen kayıtlar %95 benzerlikle eşleşir; aradaki 30 kuruşluk fark tolerans dahilinde kabul edilir.</li>
+              <li><em>Açıkta Kalanlar:</em> Bankada parası yatan ancak muhasebede faturası kesilmemiş olan veya tersi durumdaki tüm kayıtlar <em>Yalnız Tablo A</em> ve <em>Yalnız Tablo B</em> sekmelerinde anında listelenir.</li>
+            </ul>
+          </li>
+          <li><code>Birleştirilmiş Excel indir (.xlsx)</code> butonuna basarak iki tarafın verilerini yan yana getiren denetim tablosunu indirin ve mutabakatı dakikalar içinde kapatın.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 11 -->
+    <section id="ashify">
+      <h2>11. Gerçek Dosyayı Maskeleme (Seçmeli Sütun Maskeleme)</h2>
+      <p>Danışmanlara, dış yazılım ekiplerine, veri analistlerine veya denetçilere dosya teslim etmeden önce gerçek tablonuzdaki kişisel ve ticari sırları kolon bazında temizleyin. Bu moda ana menüdeki <strong>Tablo örneği</strong> sekmesinden dosyanızı yükledikten sonra <code>Gerçek dosyayı maskele</code> butonuna tıklayarak geçebilirsiniz.</p>
+
+      <h3>Sütun Bazlı Koruma Yöntemleri (Kolon Denetimi)</h3>
+      <p>Yüklenen tablonun tüm sütunları taranır ve her sütun için en uygun koruma yöntemi seçilebilir:</p>
+      <ul>
+        <li><strong>Koru (Gerçek Veri):</strong> Sütundaki orijinal değerlere dokunulmaz, olduğu gibi yeni dosyaya aktarılır.</li>
+        <li><strong>Tutarlı Sahte Karşılık (Sentetik):</strong> Aynı müşteri veya şirket dosya boyunca her satırda aynı sahte isme dönüşür (Örn: <em>Ahmet Yılmaz</em> her yerde <em>Mehmet Kaya</em> olur). Böylece analistin kuracağı gruplama ve pivot analizleri bozulmaz.</li>
+        <li><strong>Kısmi Yıldızlama (Maskeleme):</strong> Okunabilirliği ve formatı koruyarak veriyi anonimleştirir:
+          <ul>
+            <li>İsimler: <code>Ah*** Yıl***</code></li>
+            <li>Telefonlar: <code>0532 *** ** 12</code></li>
+            <li>IBAN: <code>TR45 **** **** **** **** **34</code></li>
+            <li>E-posta: <code>a****@şirket.com</code></li>
+          </ul>
+        </li>
+        <li><strong>Takma Ad Atama (Token):</strong> Kolondaki değerleri bağlama uygun takma adlarla değiştirir (<code>[MUSTERI_1]</code>, <code>[TCKN_2]</code>).</li>
+        <li><strong>Anahtarlı Kriptografik Özet (HMAC-SHA-256):</strong> Kimlikleri yalnızca bellekte tutulan geçici bir oturum tuzuyla (salt) özetler. Aynı değer her zaman aynı hash kodunu üretir; bu sayede farklı tablolar maskelendikten sonra bile birbiriyle <code>SQL JOIN</code> yapılabilir. Anahtarı bilmeyen hiç kimse TCKN gibi kısa kimlikleri deneme yoluyla geri çözemez.</li>
+        <li><strong>K-Anonimlik Genelleştirmesi (Generalization):</strong> Doğrudan teşhisi imkansız kılmak için hassas değerleri aralıklara yuvarlar:
+          <ul>
+            <li>Doğum Tarihi: <code>1988-11-20 → 1988</code> (Yıla genelleştirme)</li>
+            <li>Yaş: <code>27 → 20-29</code> (10'luk yaş grubuna genelleştirme)</li>
+            <li>Maaş / Ciro: <code>4.350 TL → 4.000 - 4.999 TL</code> (Gelir baremine genelleştirme)</li>
+          </ul>
+        </li>
+        <li><strong>Tamamen Boşalt (Null / Temizle):</strong> Kolondaki tüm hücreleri boş bırakarak bilgiyi tamamen tablodan siler.</li>
+      </ul>
+
+      <h3>Dışa Aktarma Butonları &amp; Güvenlik</h3>
+      <dl>
+        <dt><strong>İndirme Kontrolleri</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Maskelenmiş Excel İndir (.xlsx)</code>: Orijinal kolon sırası ve sayfa yapısı korunmuş, kişisel verilerden tamamen arındırılmış temiz Excel dosyası üretir.</li>
+            <li><code>Maskelenmiş CSV İndir</code>: Büyük veri kümeleri için güvenli CSV çıktısı verir. Hücrelerde formül enjeksiyonu koruması (OWASP CSV Injection) otomatik uygulanır.</li>
+            <li><code>İşlem Durumu (fileMaskAudit)</code>: Maskeleme sürerken satır sayısını ve başarı durumunu canlı olarak raporlar.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: Dış Yapay Zekâ Danışmanına Müşteri Kayıp (Churn) Analizi İçin KVKK Uyumlu Veri Hazırlama</h4>
+        <p><strong>İş Problemi:</strong> Bir şirket, müşteri kaybı (churn) modellemesi yapması için dışarıdan bağımsız bir veri analitiği ajansıyla anlaşır. Ajansa 100.000 satırlık müşteri işlem geçmişi, demografik bilgiler ve harcama tablosu verilmelidir. Ancak tabloda TCKN, ad soyad, IBAN, cep telefonu ve net maaş gibi ağır KVKK cezalarına konu olabilecek hassas veriler bulunmaktadır. Danışmanın modelleri eğitebilmesi için müşterilerin harcama alışkanlıkları ve korelasyonları korunmalı, ancak hiçbir gerçek kişi teşhis edilememelidir.</p>
+        <ol>
+          <li>Ana istasyonda <strong>Tablo örneği</strong> sekmesinden müşteri dosyanızı yükleyin ve <code>Gerçek dosyayı maskele</code> butonuna tıklayın.</li>
+          <li>Açılan <strong>Kolon Denetimi</strong> tablosunda her sütuna kurumsal koruma stratejisi belirleyin:
+            <ul>
+              <li><code>SicilNo / MusteriNo:</code> <em>Koru</em> (baştaki sıfırlı kodlar aynen kalır).</li>
+              <li><code>TCKN:</code> <em>Kriptografik özet (HMAC-SHA-256)</em> (öğrenilemez ama analistin farklı tabloları SQL JOIN ile bağlayabilmesini sağlar).</li>
+              <li><code>Ad_Soyad:</code> <em>Tutarlı sahte üret (Sentetik)</em> (Ahmet Kemal her satırda aynı sahte isme döner, gruplama analizleri bozulmaz).</li>
+              <li><code>Telefon</code> ve <code>IBAN:</code> <em>Kısmi yıldızlama</em> (<code>0532 *** ** 12</code> ve <code>TR33 **** ... **12</code>).</li>
+              <li><code>Dogum_Tarihi:</code> <em>Tarih genelleştir</em> (gün ve ay gizlenip yalnızca doğum yılı <code>1984</code> bırakılır).</li>
+              <li><code>Maas:</code> <em>Sayı/Maaş genelleştir</em> (<code>40.000 - 49.999 TL</code> gelir baremine dönüşür).</li>
+              <li><code>Harcama_Tutari</code> ve <code>Kategori:</code> <em>Koru</em> (analitik matematiksel değerler aynen saklanır).</li>
+            </ul>
+          </li>
+          <li><code>Maskelenmiş Excel İndir (.xlsx)</code> butonuna tıklayın.</li>
+          <li><strong>Sonuç:</strong> İndirilen dosyada satır yapısı ve analiz kurulabilecek tüm istatistiki dağılımlar eksiksiz korunur; ancak tek bir gerçek kişisel kimlik bile üçüncü tarafların eline geçmez (%100 KVKK uyumu).</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 12 -->
+    <section id="unpivot">
+      <h2>12. Genişten Uzuna Tablo Dönüştürücü (Unpivot / unpivot/)</h2>
+      <p>Yöneticilere sunulmak üzere elle hazırlanmış yatay çapraz tabloları (Aylar sütunlarda, Departmanlar satırlarda) Power BI, Tableau, SQL veya Python analizine uygun dikey satır formatına çevirin.</p>
+
+      <h3>Nasıl Çalışır? (Tersine Pivotlama Zekâsı)</h3>
+      <p>İnsan gözü için ayların yan yana sütunlar halinde durması kolay okunur; ancak veri tabanları ve BI araçları zaman serilerini tek bir <code>Dönem</code> sütununda ve değerleri tek bir <code>Değer</code> sütununda alt alta ister. Unpivot aracı bu işlemi formül yazmadan saniyeler içinde yapar.</p>
+
+      <h3>Ayar Kontrolleri ve Butonlar</h3>
+      <dl>
+        <dt><strong>Sütun Seçim Alanları</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Sabit kalacak sütunlar (Satır kimlikleri):</strong> Tablonun kimliğini belirleyen ve yerinde sabit kalacak sütunlar (Örn: <code>Bölge</code>, <code>Ürün Kodu</code>, <code>Şube Adı</code>, <code>Kategori</code>).</li>
+            <li><strong>Satırlara açılacak sütunlar:</strong> Sütun başlıkları satır verisine dönüşecek olan alanlar (Örn: <code>Ocak</code>, <code>Şubat</code>, <code>Mart</code>... veya <code>2023</code>, <code>2024</code>).</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Parametreler ve Çıktı Başlıkları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Dönüşen Sütun Başlığı</code>: Sütun adlarının alt alta yazılacağı yeni kolonun adı (Varsayılan: <code>Dönem</code> — dilerseniz <em>Ay</em>, <em>Yıl</em> veya <em>Metrik</em> yapabilirsiniz).</li>
+            <li><code>Değer Sütun Başlığı</code>: Hücrelerdeki sayıların veya metinlerin geleceği yeni kolonun adı (Varsayılan: <code>Değer</code> — dilerseniz <em>Ciro</em>, <em>Adet</em> veya <em>Puan</em> yapabilirsiniz).</li>
+            <li><code>Boş / Null değerleri atla (Onay Kutusu)</code>: Çapraz tablodaki boş hücreleri dikey satıra dönüştürmeyerek veri satır sayısında %80'e varan tasarruf sağlar.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>İstatistikler ve İndirme Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>İstatistik Göstergeleri</code>: Girdi Satırı, Dönüşen Satır, Veri Çarpanı (Örn: 12 sütun açıldıysa <code>12x</code>) ve Atlanan Boş Değer sayısı anlık raporlanır.</li>
+            <li><code>Excel İndir (.xlsx)</code>: Dikey formata getirilmiş yeni çalışma kitabını indirir.</li>
+            <li><code>CSV İndir</code>: Büyük veri kümeleri için hafif CSV formatında kaydeder.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: Bölge Müdürlüklerinin Elle Hazırladığı Yatay 12 Aylık Bütçe Tablosunu Power BI / SQL Formatına Çevirme</h4>
+        <p><strong>İş Problemi:</strong> Şirketin bölge müdürleri, şubelerin 12 aylık ciro hedeflerini yan yana sütunlar halinde (<code>Bölge | Şube | Kategori | Ocak | Şubat ... | Aralık</code>) içeren geniş bir Excel tablosunda toplamıştır. İş zekâsı (BI) departmanı bu veriyi Power BI panolarına bağlamak veya SQL veritabanına aktarmak istediğinde, sistemler ayların sütunlarda olmasını kabul etmez; zaman serisi grafikleri çizebilmek için tablonun dikey formatta (<code>Bölge | Şube | Kategori | Ay | Hedef_Ciro</code>) olmasını şart koşar.</p>
+        <ol>
+          <li>Yatay çapraz Excel dosyasını Unpivot aracına sürükleyip bırakın.</li>
+          <li>Açılan sütun kutularından:
+            <ul>
+              <li><strong>Sabit kalacak sütunlar (satır kimlikleri):</strong> <code>Bölge</code>, <code>Şube</code> ve <code>Kategori</code> sütunlarını işaretleyin.</li>
+              <li><strong>Satırlara açılacak sütunlar:</strong> <code>Ocak</code>, <code>Şubat</code>, <code>Mart</code> ... <code>Aralık</code> sütunlarını işaretleyin.</li>
+            </ul>
+          </li>
+          <li><code>Dönüşen Sütun Başlığı</code> kutusuna <code>Ay</code>, <code>Değer Sütun Başlığı</code>na <code>Hedef_Ciro</code> yazın.</li>
+          <li><code>[x] Boş / Null değerleri atla</code> kutusunu işaretli bırakın (satışı veya hedefi olmayan aylar veri kalabalığı yaratmaz).</li>
+          <li><code>Excel indir (.xlsx)</code> butonuna basın.</li>
+          <li><strong>Sonuç:</strong> Saatlerce sürecek kopyala-yapıştır veya karmaşık formüllere gerek kalmadan, binlerce satırlık tertemiz dikey analitik tablo saniyeler içinde üretilir ve Power BI'da anında aylık trend grafikleri çizilebilir.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 13 -->
+    <section id="tablo-farki">
+      <h2>13. Hücre Düzeyinde Tablo Karşılaştırıcı (Tabular Diff / tablo-farki/)</h2>
+      <p>İki farklı tarihteki fiyat listesi, personel bordrosu, stok dökümü veya müşteri tablosu arasındaki tüm farkları hücre hücre bulun ve denetim raporu alın.</p>
+
+      <h3>Nasıl Çalışır? (Akıllı Anahtar Eşleme)</h3>
+      <ul>
+        <li><strong>Anahtar Sütun Tabanlı Eşleştirme:</strong> Satırların dosyadaki sırası değişmiş, araya yeni satırlar girmiş veya satırlar silinmiş olsa bile; belirlediğiniz birincil anahtara (örn. <code>Sicil No</code>, <code>Ürün Kodu</code> veya <code>TCKN</code>) göre eski ve yeni satırları otomatik olarak hizalar.</li>
+        <li><strong>Bileşik Anahtar (Composite Key):</strong> Tek bir sütun tekil değilse birden fazla sütunu (örn. <code>Şube Kodu + Hesap No</code>) birlikte anahtar seçebilirsiniz.</li>
+      </ul>
+
+      <h3>Karşılaştırma Ayarları &amp; Toleranslar</h3>
+      <ul>
+        <li><code>Büyük / Küçük Harf Duyarsız Karşılaştır</code>: Metinlerdeki harf büyüklüğü farklarını (örn. <code>Mavi</code> vs <code>mavi</code>) değişiklik saymaz.</li>
+        <li><code>Hücre Başı/Sonu Boşluklarını Yok Say (Trim)</code>: Hücrelerin başında veya sonunda unutulmuş boşluk karakterlerini tolere eder.</li>
+        <li><code>Sayısal Denklik (5 = 5.0)</code>: İki taraftaki değerler sayı olarak okunabiliyorsa biçim farklarını eşit sayar. Ancak <code>007</code> gibi baştaki sıfırlı sicil kodlarını sayıya çevirip bozmaz, metin olarak korur.</li>
+      </ul>
+
+      <h3>Durum Rozetleri ve İstatistikler</h3>
+      <dl>
+        <dt><strong>Satır Durum Göstergeleri</strong></dt>
+        <dd>
+          <ul>
+            <li><code>+ Yeni Eklenenler (Yeşil)</code>: Eski tabloda olmayıp yeni tabloda ilk kez görülen satırlar.</li>
+            <li><code>- Silinenler (Kırmızı)</code>: Eski tabloda varken yeni tabloda yer almayan satırlar.</li>
+            <li><code>~ Değişenler (Sarı)</code>: Anahtarı aynı olan ancak en az bir hücresindeki bilgi güncellenmiş satırlar. Hücre içinde <code>Eski Değer → Yeni Değer</code> şeklinde kırmızı/yeşil görsel fark gösterilir.</li>
+            <li><code>= Değişmeyenler</code>: İki dosyada da birebir aynı kalan kayıtlar.</li>
+            <li><code>Tekrarlı Anahtar / Boş Anahtar</code>: Dosyada tekil olması gerekirken birden fazla geçen veya boş bırakılmış hatalı anahtar satırları tespit eder.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Filtre Sekmeleri ve Rapor Butonları</strong></dt>
+        <dd>
+          <ul>
+            <li><code>Filtre Sekmeleri</code>: Tabloda yalnızca değişenleri, eklenenleri veya silinenleri filtreleyerek inceleme imkanı.</li>
+            <li><code>Excel denetim raporu (.xlsx) (Yeşil Buton)</code>: Profesyonel Excel çıktısı üretir. İlk sayfada yönetici özeti, sonraki sayfalarda renkli hücre farkları ve eklenen/silinen satırlar ayrı ayrı listelenir.</li>
+            <li><code>Farkları CSV indir</code>: Fark tablosunu CSV olarak indirir.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: Tedarikçiden Gelen 15.000 Kalemlik Yeni Fiyat Listesindeki Gizli Zamları ve Silinen Ürünleri Denetleme</h4>
+        <p><strong>İş Problemi:</strong> Bir üretim fabrikasının satın alma birimi, ana hammadde tedarikçisinden yeni döneme ait 15.000 satırlık güncel fiyat listesi alır. Tedarikçi "bazı ürünlerde küçük güncellemeler yapıldığını" belirtmiştir ancak binlerce satırlık Excel tablosunda hangi ürünlerin fiyatının ne kadar arttığı, hangi kritik yedek parçaların listeden çıkarıldığı ve hangi yeni kalemlerin eklendiği açıkça belirtilmemiştir.</p>
+        <ol>
+          <li><strong>Tablo A (Eski / Referans):</strong> Geçen dönemin onaylı fiyat listesini yükleyin.</li>
+          <li><strong>Tablo B (Yeni / Güncel):</strong> Tedarikçiden yeni gelen güncel fiyat listesini yükleyin.</li>
+          <li>Anahtar sütun listesinden <code>UrunKodu</code> veya <code>MalzemeNo</code> seçin.</li>
+          <li><code>[x] Hücre Başı/Sonu Boşluklarını Yok Say</code> ve <code>[x] Sayısal Denklik (5 = 5.0)</code> kutularını işaretli bırakın (baştaki sıfırlı <code>00101</code> kodları metin olarak korunur, gereksiz biçim farkları elenir).</li>
+          <li><strong>Sonuç Ekranı ve Sekmeler:</strong>
+            <ul>
+              <li><code>~ Değişenler:</code> Fiyatı zamlanan ürünler hücre içinde <code>1.200,00 TL → 1.450,00 TL</code> şeklinde eski ve yeni değerle kırmızı/yeşil olarak anında yakalanır.</li>
+              <li><code>+ Eklenenler:</code> Tedarikçinin portföyüne yeni giren alternatif parçalar listelenir.</li>
+              <li><code>- Silinenler:</code> Üretim hattının sipariş vermeyi planladığı ancak tedarikçinin sessizce listeden çıkardığı malzemeler hemen tespit edilir.</li>
+            </ul>
+          </li>
+          <li>Yeşil <code>Excel denetim raporu (.xlsx)</code> butonuna basarak ilk sayfasında yönetici özeti, diğer sayfalarında ise hücre hücre renkli farkları barındıran resmi denetim raporunu indirin.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 14 -->
+    <section id="encoding">
+      <h2>14. Bozuk Karakter Onarma (Windows-1254 → UTF-8 / encoding-kurtarici/)</h2>
+      <p>SAP, Logo, Mikro, Netsis, AS400 gibi kurumsal sistemlerden veya eski veri tabanlarından alınan ve Excel'de açıldığında Türkçe karakterleri bozuk (Mojibake: <code>Ã¼, ÅŸ, Ä±</code> veya <code>ý, þ, ð</code>) görünen dosyaları tek tıkla kurtarın.</p>
+
+      <h3>Nasıl Çalışır? (Bayt Düzeyinde Onarım)</h3>
+      <ul>
+        <li><strong>Windows-1254 (ISO-8859-9) Tespiti:</strong> Dosyanın bayt dizilimini analiz eder; klasik Türkçe ERP karakter kodlamasını otomatik olarak algılar.</li>
+        <li><strong>Mojibake Onarımı:</strong> UTF-8 olarak kaydedilmiş bir dosya Windows-1254 olarak açıldığında veya tam tersi olduğunda oluşan karakter karmaşasını orijinal Türkçe karşılıklarına çevirir.</li>
+        <li><strong>Excel için UTF-8 BOM Güvencesi:</strong> Dosyanın en başına <code>0xEF, 0xBB, 0xBF</code> (Byte Order Mark) baytlarını ekler. Bu sayede dosya Microsoft Excel'de çift tıklanarak açıldığında Türkçe karakterler (<code>ç, ğ, ı, ö, ş, ü</code>) hiçbir ayar yapmaya gerek kalmadan kristal netliğinde görünür.</li>
+      </ul>
+
+      <h3>Kontroller ve Önizleme</h3>
+      <dl>
+        <dt><strong>Ayarlar ve Butonlar</strong></dt>
+        <dd>
+          <ul>
+            <li><code>ý / þ / ð Şüphesi Onay Kutusu</code>: Windows-1252 karışıklığı nedeniyle <code>ı</code> yerine <code>ý</code>, <code>ş</code> yerine <code>þ</code>, <code>ğ</code> yerine <code>ð</code> basılmış dosyaları düzeltir. <em>Metninizde Çekçe, İzlandaca veya İskandinav dillerinde gerçek kişi adları varsa bu kutuyu işaretlememeniz önerilir.</em></li>
+            <li><code>Onarılmış dosyayı indir (UTF-8, Excel uyumlu) (Yeşil Buton)</code>: Düzeltilmiş ve başına BOM eklenmiş temiz dosyayı hemen bilgisayarınıza indirir.</li>
+            <li><strong>Canlı Önce / Sonra Önizleme:</strong> Sol panelde dosyanın bozuk halini, sağ panelde ise onarılmış UTF-8 halini yan yana göstererek sonucu indirmeden önce gözünüzle teyit etmenizi sağlar.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: Eski Kurumsal ERP / Muhasebe Sisteminden Alınan Bozuk Türkçe Karakterli CSV'yi Kurtarma</h4>
+        <p><strong>İş Problemi:</strong> Şirketin uzun yıllardır kullandığı yerel bir ERP / muhasebe yazılımından (SAP, Logo, Mikro, Netsis vb.) 50.000 satırlık cari hesap dökümü CSV olarak dışa aktarılır. Dosya modern bir bilgisayarda veya Excel'de açıldığında tüm Türkçe karakterlerin bozulduğu görülür: <code>İ</code> yerine <code>Ý</code>, <code>Ş</code> yerine <code>Þ</code>, <code>Ğ</code> yerine <code>Ð</code>, ya da Mojibake nedeniyle <code>Şirket</code> yerine <code>ÅŸirket</code> yazmaktadır. Bu bozuk metinler banka talimatlarına veya e-fatura sistemlerine yüklendiğinde geçersiz karakter hatası verip tüm işlemleri kilitler.</p>
+        <ol>
+          <li>Bozuk CSV dosyasını ekrana sürükleyip bırakın.</li>
+          <li>Sistem dosyanın bayt diziliminden <em>Windows-1254 (Klasik Türkçe ERP Formatı)</em> olduğunu anında algılar.</li>
+          <li>Ekranda beliren <code>[x] ý / þ / ð harfleri ı / ş / ğ olarak düzeltilsin</code> kutusunu işaretleyin.</li>
+          <li><strong>Yan Yana Önizleme:</strong> Sol panelde <code>Ýstanbul Daðýtým Þirketi</code> gibi bozuk metin görünürken, sağ panelde anında <code>İstanbul Dağıtım Şirketi</code> şeklinde kusursuz Türkçe görünümü gözünüzle teyit edin.</li>
+          <li>Yeşil <code>Onarılmış dosyayı indir (UTF-8, Excel uyumlu)</code> butonuna basın.</li>
+          <li><strong>Sonuç:</strong> Dosya başına UTF-8 BOM baytları (<code>0xEF, 0xBB, 0xBF</code>) eklenerek iner. Dosyayı Microsoft Excel'de çift tıkladığınızda tüm Türkçe harfler hiçbir metin sihirbazı ayarına gerek kalmadan kristal netliğinde açılır.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 15 -->
+    <section id="workbench">
+      <h2>15. Veri Tezgâhı (Çok Amaçlı Yerel Veri Atölyesi)</h2>
+      <p>Ana istasyonda <strong>Dosya işleri → Veri Tezgâhı</strong> sekmesinden açılır; sağ üstteki <em>"Tam ekranda aç"</em> bağlantısıyla geniş bir çalışma masası olarak da kullanılabilir.</p>
+
+      <h3>Veri Tezgâhı Nedir? Neden İhtiyaç Duyulur?</h3>
+      <p>Günlük ofis ve analiz hayatında bir Excel veya CSV dosyası üzerinde çalışırken genellikle şu zorluklarla karşılaşılır:</p>
+      <ul>
+        <li>Veriyi temizlemek için bir web sitesine, başlıkları düzeltmek için bir Excel formülüne, SQL çalıştırmak için karmaşık veri tabanı programlarına, kişisel verileri gizlemek için başka yazılımlara ihtiyaç duyulur.</li>
+        <li>Birçok kullanıcı bu işlemler için verilerini bilmeden üçüncü taraf bulut sitelerine yükler ve kurumsal sırları dışarı sızdırır.</li>
+      </ul>
+      <p><strong>Veri Tezgâhı</strong>, tek bir tabloyu tarayıcınıza yükleyip; veri temizleme, veri kalitesi röntgeni, kural denetimi, saf SQL sorgulama, pivot dönüşümü ve gizlilik işlemlerinin tamamını <strong>tek bir çatı altında ve %100 çevrimdışı</strong> yapmanızı sağlayan yerel bir İsviçre çakısıdır. Dört ana çalışma bölümünden oluşur:</p>
+
+      <hr style="border:none; border-top:1px dashed var(--guide-rule); margin:20px 0;">
+
+      <h3>1. Analiz ve Sorgu (Verinizi Keşfedin ve Temizleyin)</h3>
+      <dl>
+        <dt><strong>Adım Adım Reçete Motoru (İş Akışı &amp; Otomasyon)</strong></dt>
+        <dd>
+          <p>Tablonuzda yaptığınız her temizlik işlemini (başlıkları küçük harf/snake_case yapma, gereksiz boşlukları silme, metin kolonunu sayıya çevirme, formülle yeni hesaplanmış sütun türetme) kronolojik bir reçete listesine yazar.</p>
+          <ul>
+            <li><strong>Geri Al / İleri Al (Undo / Redo):</strong> Hatalı bir adım attığınızda korkmadan geriye dönebilirsiniz.</li>
+            <li><strong>Tarifi Kaydet (.recipe.json):</strong> Bugün yaptığınız 10 adımlık temizlik sürecini küçük bir şablon dosyası olarak kaydedebilir; haftaya veya gelecek ay gelecek yeni dosyalara <em>tek tıkla</em> uygulayarak saatler süren rutin işi 1 saniyede bitirebilirsiniz.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Veri Röntgeni &amp; Sağlık Raporu (Profiler)</strong></dt>
+        <dd>
+          <p>Dosyanızın anında MR'ını çeker. Her sütun için boş hücre oranını, en küçük/en büyük değerleri ve ortalamaları listeler. Özellikle veri tabanlarına aktarırken dosyanızı bozan gizli tehlikeleri kırmızı alarmlarla haber verir:</p>
+          <ul>
+            <li><em>Baştaki Sıfırların Kaybolma Tehlikesi:</em> <code>00142</code> gibi sicil veya ürün kodlarının Excel tarafından yanlışlıkla <code>142</code> sayısına dönüştürülüp bozulma riskini uyarır.</li>
+            <li><em>Karışık Veri Tipleri:</em> Aynı sütunda hem sayı hem metin bulunması durumunu yakalar.</li>
+            <li><em>Veri Sağlık Puanı:</em> Tablonuzun güvenilirliğini 0 ile 100 arasında tek bir kalite skoruyla özetler.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Kural Denetimi &amp; Hata Ayıklama (Doğrulama Motoru)</strong></dt>
+        <dd>
+          <p>Tablonuzdaki satırların iş kurallarına uyup uymadığını matematiksel olarak denetler:</p>
+          <ul>
+            <li>TC Kimlik No ve Vergi Kimlik No algoritmaları geçerli mi?</li>
+            <li>E-posta ve telefon numaraları standartlara uyuyor mu?</li>
+            <li>Tutar ve yaş alanlarında mantıksız negatif sayılar var mı?</li>
+            <li><strong>Temiz ve Hatalı Satırları Ayırma:</strong> Tek tıkla tablonuzu ikiye böler: Kurallara uyan satırlar ayrı bir temiz tabloya alınır; kurallara uymayanlar ise yanlarına eklenen <em>"Hata Gerekçesi"</em> sütunuyla birlikte ayrı bir denetim tablosuna aktarılır.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Kolon Başlığı Eşleştirici (Şema Eşleme)</strong></dt>
+        <dd>
+          <p>Farklı şubelerden, mağazalardan veya bayilerden gelen tablolardaki sütun isimleri ("ad_soyad", "Musteri", "CUST_NAME") şirketinizin standart şablonuna otomatik veya bulanık eşleme ile saniyeler içinde hizalanır.</p>
+        </dd>
+
+        <dt><strong>Tarayıcı İçi Saf SQL Stüdyosu</strong></dt>
+        <dd>
+          <p>Bilgisayarınıza hiçbir veri tabanı (MySQL, PostgreSQL vb.) kurmadan, doğrudan tarayıcınızın içinde tablonuza SQL sorguları atmanızı sağlar:</p>
+          <ul>
+            <li><code>SELECT</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>ORDER BY</code>, <code>JOIN</code> ve <code>ANTI JOIN</code> tam desteklenir.</li>
+            <li><strong>Görsel Sorgu Sihirbazı:</strong> SQL komutlarını ezbere bilmeyen kullanıcılar için filtreleri ve gruplamaları butonlarla tıklayarak oluşturma imkanı sunar.</li>
+            <li>Sorgu sonucunu anında grafik olarak görebilir veya yeni bir Excel/CSV tablosu olarak indirebilirsiniz.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <hr style="border:none; border-top:1px dashed var(--guide-rule); margin:20px 0;">
+
+      <h3>2. Gizlilik ve Güvenli Paylaşım</h3>
+      <dl>
+        <dt><strong>İlişki Koruyan Deterministik Takma Adlandırma (HMAC)</strong></dt>
+        <dd>
+          <p>Tablodaki müşteri isimlerini veya kimlik numaralarını şifrelerken aralarındaki bağlantıyı korur. "Ahmet Yılmaz" hangi dosyada geçerse geçsin her zaman aynı gizli kodu alır. Böylece kişisel veriler tamamen gizlenmiş olsa dahi iki farklı tablo birbiriyle <code>SQL JOIN</code> yapılmaya devam edebilir.</p>
+        </dd>
+
+        <dt><strong>Deterministik Tarih Kaydırma (Date Shifting)</strong></dt>
+        <dd>
+          <p>Hassas takvim günlerini gizlemek için tablodaki tüm tarihleri rastgele ama tutarlı bir gün sayısı kadar ileri veya geri kaydırır. İki olay arasındaki gün farkı (örneğin hastaneye yatış ile taburcu olma veya sipariş ile teslimat arasındaki gün sayısı) kuruşu kuruşuna korunur.</p>
+        </dd>
+
+        <dt><strong>Güvenli Paylaşım Taraması (Safe Share)</strong></dt>
+        <dd>
+          <p>Dosyayı kurum dışına, müşteriye, ajansa veya denetçiye göndermeden önce son bir güvenlik kontrolü yapar:</p>
+          <ul>
+            <li>İçinde unutulmuş gizli Excel sayfalarını ve hücre yorumlarını bulur.</li>
+            <li>Zararlı komut çalıştırabilecek tehlikeli formülleri (<code>WEBSERVICE</code>, <code>EXEC</code>) tespit eder.</li>
+            <li>Dosya özellikleri içine gizlenmiş yazar adı, bilgisayar adı ve şirket meta verilerini temizler.</li>
+            <li>Gözden kaçmış TC Kimlik veya telefon sızıntılarını uyarır ve tek tıkla steril dosya üretir.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <hr style="border:none; border-top:1px dashed var(--guide-rule); margin:20px 0;">
+
+      <h3>3. Dönüştür ve Onar (Şekil &amp; Kurtarma Operasyonları)</h3>
+      <dl>
+        <dt><strong>Çoklu Dosya Birleştirme &amp; Sütuna Göre Bölme</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Akıllı Birleştirme:</strong> Sütun sıraları birbirini tutmayan birden fazla Excel/CSV dosyasını, başlık adlarını otomatik eşleştirerek alt alta tek bir devasa tabloda toplar.</li>
+            <li><strong>Sütuna Göre Bölme:</strong> Büyük bir tabloyu tek tıkla seçtiğiniz bir sütuna göre (örneğin her şehir veya her departman için ayrı dosya) bağımsız dosyalara ayırır.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Acil Durum CSV Kurtarıcı</strong></dt>
+        <dd>
+          <p>Yanlış ayraçla (virgül yerine noktalı virgül vb.) kaydedilmiş, tırnak işaretleri karışmış veya satır sonları bozulduğu için Excel'in açamadığı hatalı CSV dosyalarını bayt düzeyinde analiz ederek onarır.</p>
+        </dd>
+
+        <dt><strong>Dinamik Pivot &amp; Şekil Dönüşümleri</strong></dt>
+        <dd>
+          <ul>
+            <li><strong>Dinamik Pivot Tablo:</strong> Satır, sütun ve metrik (toplam, ortalama, adet) seçerek kod yazmadan anında özet tablolar çıkarır.</li>
+            <li><strong>Dizileri Satıra Açma (Explode):</strong> Hücre içindeki virgüllü değerleri (örn. <em>"Elma, Armut, Muz"</em>) alt alta ayrı satırlara açar.</li>
+            <li><strong>Satırları Tek Hücrede Toplama (Implode):</strong> Tekrarlayan satırları gruplayarak tek bir hücrede virgülle birleştirir.</li>
+          </ul>
+        </dd>
+
+        <dt><strong>Derin Hücre İnceleyici</strong></dt>
+        <dd>
+          <p>Hücrelerin içine sıkışmış karmaşık JSON, XML veya Base64 kodlarını yerinde çözer; renkli, girintili ve kolay okunur bir biçimde ekrana getirir.</p>
+        </dd>
+
+        <dt><strong>Pano Tezgâhı &amp; Sentetik Veri Üretici</strong></dt>
+        <dd>
+          <ul>
+            <li>Web sitelerinden veya e-postalardan kopyalanan biçimsiz metinleri sekmeyle ayrılmış temiz bir tabloya dönüştürür.</li>
+            <li>Yapay zekâ veya test amaçlı kullanım için gerçekçi sahte TCKN, ad, adres, telefon ve finansal veri kümeleri üretir.</li>
+          </ul>
+        </dd>
+      </dl>
+
+      <hr style="border:none; border-top:1px dashed var(--guide-rule); margin:20px 0;">
+
+      <h3>4. Tarifler ve Kısayollar</h3>
+      <ul>
+        <li><strong>Hızlı Komut Paleti (Ctrl + K):</strong> Hangi sekmede olursanız olun klavyeden <code>Ctrl + K</code> tuşlarına basarak Veri Tezgâhı'ndaki onlarca araca ve fonksiyona anında erişebilirsiniz.</li>
+        <li><strong>İşlem Özeti (.run.json):</strong> Yaptığınız tüm temizlik sürecini, gerçek müşteri verilerini içermeyen saf bir operasyon denetim günlüğü olarak kaydeder.</li>
+      </ul>
+
+      <h3>Gerçek Hayat Kullanım Senaryosu</h3>
+      <div class="example-scenario">
+        <h4>Senaryo: 81 İl Bayisinden Toplanan Satış Verisini Doğrulama, Hatalı Kayıtları Ayıklama ve SQL ile Ciro Raporlama</h4>
+        <p><strong>İş Problemi:</strong> Bir distribütör firmanın operasyon merkezi, Türkiye genelindeki 81 il bayisinden haftalık satış ve aktivasyon listeleri toplar. Ancak bayilerden gelen dosyalarda sık sık sahte/geçersiz TCKN'ler, yanlış girilmiş e-postalar, sistemin kabul etmeyeceği negatif satış tutarları ve Excel'in baştaki sıfırlarını yuttuğu hatalı bayi kodları bulunmaktadır. Bu kirli veriler doğrudan ana veri tabanına yüklenirse ERP çökmekte ve finansal raporlar yanlış çıkmaktadır.</p>
+        <ol>
+          <li>Ana istasyonda <strong>Dosya işleri → Veri Tezgâhı</strong> sekmesini açın ve haftalık konsolide satış dosyanızı yükleyin.</li>
+          <li><strong>1. Adım (Veri Röntgeni - Profiler):</strong> <em>Analiz ve sorgu → Profiler</em> sekmesini açın. Sütun tiplerini, bayi kodlarındaki 'Baştaki sıfırların kaybolma riski' alarmını ve tablonun genel Veri Kalite Puanı'nı inceleyin.</li>
+          <li><strong>2. Adım (Kural Denetimi - Validator):</strong> <em>Validator</em> sekmesinde iş kuralları tanımlayın:
+            <ul>
+              <li><code>TCKN</code> için 'TCKN Algoritması' doğrulaması,</li>
+              <li><code>E-posta</code> için 'E-posta Formatı' deseni,</li>
+              <li><code>Tutar</code> için 'Pozitif Sayı' kuralı seçip <em>Doğrula</em> butonuna basın.</li>
+              <li>Sistem kurallara uymayan yüzlerce satırı (negatif tutar, geçersiz kimlik) anında yakalar. <code>Hatalı Satırları İndir</code> diyerek yanlarına hata gerekçeleri eklenmiş denetim dosyasını düzeltilmek üzere ilgili bayilere geri gönderin; temiz satırlar ise ana işleme devam eder.</li>
+            </ul>
+          </li>
+          <li><strong>3. Adım (Tarayıcı İçi Saf SQL):</strong> <em>SQL Studio</em> sekmesine geçin. Bilgisayarınıza hiçbir veri tabanı kurmadan doğrudan sorgu kutusuna:<br>
+            <code>SELECT bolge, COUNT(*) as satis_adedi, SUM(tutar) as toplam_ciro FROM tablo GROUP BY bolge ORDER BY toplam_ciro DESC</code><br>
+            yazıp <em>Çalıştır</em> butonuna basın. Tarayıcı içinde saniyeler içinde bölge bazlı özet ciro tablosunu ve grafiğini çıkarın.</li>
+          <li><strong>4. Adım (Tarif Kaydetme):</strong> <em>Tarifler</em> bölümünden <code>Tarifi İndir (.recipe.json)</code> diyerek yaptığınız temizlik adımlarını kaydedin; gelecek hafta yeni dosya geldiğinde tüm bu süreci tek tıkla otomatik tekrarlayın.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

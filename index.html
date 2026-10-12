@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Masko — Yerel Veri İstasyonu</title>
+<link rel="icon" type="image/png" href="icons/icon-32.png">
+<script src="tema.js"></script>
+  <script src="dil/en.js"></script>
+  <script src="dil.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<!-- Üst çubuk ve güvence bandı tam genişliktir; içerik .page içinde ortalanır. -->
+<header class="topbar">
+  <div class="topbar-ic">
+    <div class="brand">
+      <img src="icons/masko-logo.png" alt="" class="brand-logo" width="40" height="40">
+      <h1 class="brand-ad">Masko</h1>
+      <span class="brand-subtitle-badge">Yerel Veri İstasyonu</span>
+    </div>
+
+    <!-- Gezinme işe göre gruplanır: üç "AI'ya göndermeden" işi ana sekmede,
+         dosya araçları tek bir "Dosya işleri" sekmesinin altında. -->
+    <nav class="main-nav" aria-label="Ana gezinme">
+      <div class="mode-tabs" role="tablist" aria-label="İşler">
+        <button class="mode-tab is-active" data-mode="mask" role="tab" aria-selected="true" type="button">Maskele</button>
+        <button class="mode-tab" data-mode="unmask" role="tab" aria-selected="false" type="button">Geri Aç</button>
+        <button class="mode-tab" data-mode="dosya" role="tab" aria-selected="false" type="button" title="Excel/CSV dosyasını göndermeden aynı yapıda sahte örnek üretir">Tablo örneği</button>
+        <button class="mode-tab mode-tab-group" data-mode="araclar" role="tab" aria-selected="false" type="button">Dosya işleri</button>
+      </div>
+    </nav>
+
+    <div class="topbar-right">
+      <button class="info-btn" id="infoBtn" type="button" aria-label="Nasıl kullanılır?" title="Nasıl kullanılır?">?</button>
+      <div class="tema-secici" role="radiogroup" aria-label="Görünüm" data-tema-secici>
+        <button type="button" role="radio" data-tema="system" title="Bilgisayarın açık/koyu ayarını izler">Sistem</button>
+        <button type="button" role="radio" data-tema="light">Açık</button>
+        <button type="button" role="radio" data-tema="dark">Koyu</button>
+      </div>
+      <div class="tema-secici dil-secici" role="radiogroup" aria-label="Dil / Language" data-dil-secici translate="no">
+        <button type="button" role="radio" data-dil="tr" lang="tr">Türkçe</button>
+        <button type="button" role="radio" data-dil="en" lang="en">English</button>
+      </div>
+    </div>
+  </div>
+</header>
+<p class="guvence-bandi">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+  Hiçbir metin bu sekmeden dışarı gönderilmez — tüm işlem tarayıcınızda çalışır.
+</p>
+
+<div class="page">
+    <div class="tool-tabs" id="toolTabs" role="tablist" aria-label="Dosya işleri" hidden>
+      <button class="tool-tab is-active" data-tool="dedup" role="tab" aria-selected="true" type="button">Tekilleştir</button>
+      <button class="tool-tab" data-tool="split" role="tab" aria-selected="false" type="button">Böl</button>
+      <button class="tool-tab" data-tool="fuzzy" role="tab" aria-selected="false" type="button">Eşleştir</button>
+      <button class="tool-tab" data-tool="diff" role="tab" aria-selected="false" type="button">Karşılaştır</button>
+      <button class="tool-tab" data-tool="unpivot" role="tab" aria-selected="false" type="button">Genişten uzuna</button>
+      <button class="tool-tab" data-tool="encoding" role="tab" aria-selected="false" type="button">Karakter onar</button>
+      <button class="tool-tab" data-tool="pdf" role="tab" aria-selected="false" type="button">PDF</button>
+      <button class="tool-tab" data-tool="workbench" role="tab" aria-selected="false" type="button">Veri Tezgâhı</button>
+    </div>
+
+  <main>
+    <section class="mode-panel maske-paneli" data-panel="mask">
+      <div class="maske-ust">
+        <div class="maske-baslik">
+          <h2>Yapıştırmadan önce maskeleyin.</h2>
+          <p>Metin ve kodu AI'ya göstermeden önce yerel olarak maskeler; Excel/CSV dosyalarınızdan ise gerçek veri göndermeden aynı yapıda sahte örnek üretir.</p>
+        </div>
+        <dl class="sayac">
+          <div class="sayac-oge"><dt>Maskelendi</dt><dd id="sayacMaske">0</dd></div>
+          <div class="sayac-oge"><dt>Gözden geçir</dt><dd id="sayacAday">0</dd></div>
+          <div class="sayac-oge" title="Masko hiçbir metni ağ üzerinden göndermez."><dt>Dışarı giden</dt><dd class="sayac-sifir">0</dd></div>
+        </dl>
+      </div>
+
+      <!-- Soldan sağa akış: orijinal → Maskele → maskeli çıktı. -->
+      <div class="akis">
+        <div class="akis-panel">
+          <div class="sekme-satiri">
+            <label class="klasor-sekme" for="maskInput">Orijinal <span>burada kalır</span></label>
+            <span class="ocr-status" id="ocrStatus" hidden></span>
+          </div>
+          <div class="metin-kutu">
+            <!-- Textarea renk gösteremez; maskelenecek değerler arkadaki
+                 aynı ölçülü katmanda boyanır, kaydırma onunla eşlenir. -->
+            <div class="vurgu-katmani" id="girdiVurgu" translate="no" aria-hidden="true"></div>
+            <textarea id="maskInput" spellcheck="false" aria-describedby="girdiBosIpucu"></textarea>
+            <div class="bos-durum" id="girdiBos" hidden>
+              <svg width="48" height="48" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M5.5 6h5M5.5 9h5"/></svg>
+              <strong>Metni buraya yapıştırın</strong>
+              <span id="girdiBosIpucu">Metin, SQL, kod ya da Ctrl+V ile ekran görüntüsü. Görsel hiçbir yere gönderilmeden tarayıcıda okunur.</span>
+            </div>
+          </div>
+          <div class="panel-alti">
+            <button class="ekle-dugme" id="addSelection" type="button">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+              <span class="dugme-etiket">Seçili metni ekle</span>
+            </button>
+            <p class="pick-hint">Tarama bir şeyi kaçırdıysa metinde seçip ekleyin; sözlüğe girer.</p>
+          </div>
+        </div>
+
+        <div class="akis-orta">
+          <button class="maskele-dugme" id="runMask" type="button">
+            <span class="dugme-etiket">Maskele</span>
+            <svg class="maskele-ok" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </button>
+          <button class="orta-dugme" id="runScan" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4"/><path d="M10 10l3.5 3.5"/></svg>
+            Adayları tara
+          </button>
+          <button class="orta-dugme" id="openRedactModal" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="6" cy="7" r="1"/><path d="M2.5 12l4-3.5 3 2.5 2-1.5 2 2"/></svg>
+            Görseli karart
+          </button>
+          <button class="tur-ac" id="detectToggle" type="button" aria-expanded="false" aria-controls="detectPanel">
+            <span>Otomatik türler</span>
+            <span class="detect-count" id="detectCount"></span>
+          </button>
+        </div>
+
+        <div class="akis-panel">
+          <div class="sekme-satiri">
+            <span class="klasor-sekme cikti-sekme" id="ciktiSekme">Maskeli çıktı <span>AI'ya bunu yapıştırın</span></span>
+          </div>
+          <div class="metin-kutu cikti-kutu">
+            <div class="cikti-gorunum" id="maskOutputView" translate="no" role="textbox" aria-readonly="true" aria-multiline="true" aria-labelledby="ciktiSekme" tabindex="0"></div>
+            <div class="bos-durum cikti-bos" id="ciktiBos" hidden>
+              <span class="iskelet" aria-hidden="true">
+                <span><i></i><i class="m"></i></span>
+                <span><i></i><i class="m"></i></span>
+                <span><i></i><i class="m"></i><i></i></span>
+              </span>
+              <strong>Maskeli çıktı burada belirir</strong>
+              <span>Hassas değerler [EPOSTA_1] gibi etiketlerle değişir.</span>
+            </div>
+            <textarea id="maskOutput" spellcheck="false" readonly hidden></textarea>
+          </div>
+          <div class="panel-alti">
+            <button class="kopyala-dugme" id="maskCopy" type="button" data-copy="maskOutput" data-review="outbound">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>
+              <span class="dugme-etiket">Kontrol et ve kopyala</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="detect-panel" id="detectPanel" hidden>
+      <div class="detect-row">
+        <label class="chip"><input type="checkbox" data-detect="iban" checked> IBAN (TR + uluslararası)</label>
+        <label class="chip"><input type="checkbox" data-detect="email" checked> E-posta</label>
+        <label class="chip"><input type="checkbox" data-detect="phone" checked> Telefon (TR + uluslararası)</label>
+        <label class="chip"><input type="checkbox" data-detect="ssn" checked> SSN (ABD)</label>
+        <label class="chip"><input type="checkbox" data-detect="card" checked> Kredi Kartı</label>
+        <label class="chip"><input type="checkbox" data-detect="tckn" checked> TC Kimlik No</label>
+        <label class="chip"><input type="checkbox" data-detect="ykn" checked> Yabancı Kimlik No</label>
+        <label class="chip"><input type="checkbox" data-detect="vkn" checked> Vergi Kimlik No</label>
+        <label class="chip"><input type="checkbox" data-detect="kep" checked> KEP Adresi</label>
+        <label class="chip"><input type="checkbox" data-detect="plaka" checked> Araç Plakası</label>
+        <label class="chip"><input type="checkbox" data-detect="ip" checked> IP Adresi</label>
+        <label class="chip"><input type="checkbox" data-detect="mac" checked> MAC Adresi</label>
+        <label class="chip"><input type="checkbox" data-detect="imei" checked> IMEI</label>
+        <label class="chip"><input type="checkbox" data-detect="uuid" checked> UUID / GUID</label>
+        <label class="chip"><input type="checkbox" data-detect="kripto" checked> Kripto Cüzdan</label>
+        <label class="chip"><input type="checkbox" data-detect="secret" checked> Gizli anahtar / JWT</label>
+        <label class="chip"><input type="checkbox" data-detect="amount" checked> Tutar (₺/$/€)</label>
+        <label class="chip"><input type="checkbox" data-detect="date" checked> Tarih</label>
+      </div>
+      </div>
+
+      <div class="undo-bar" id="undoBar" hidden>
+        <span id="undoText"></span>
+        <button type="button" id="undoBtn">Geri getir</button>
+      </div>
+
+      <!-- Kişi adı ve adres adayları burada "Gözden geçir" satırı olarak durur;
+           yalnız maskeli çıktıda hâlâ açıkta olanlar gösterilir. -->
+      <section class="denetim" id="denetimPanel" aria-labelledby="denetimBaslik" hidden>
+        <div class="denetim-baslik">
+          <h2 id="denetimBaslik">Denetim defteri</h2>
+          <span>Neyin neyle değiştiği — orijinal değerler kısmen gizli</span>
+        </div>
+        <div class="denetim-sar">
+          <table class="denetim-tablo">
+            <thead><tr><th scope="col">Tür</th><th scope="col">Orijinal</th><th scope="col">Yerine yazılan</th><th scope="col">Durum</th></tr></thead>
+            <tbody id="denetimBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="suggestions" id="suggestions" hidden>
+        <div class="suggest-group">
+          <h3>Kod tanımlayıcıları <span class="suggest-hint">(değişken, tablo, fonksiyon adı vb. — tıklayınca sözlüğe eklenir)</span></h3>
+          <div class="chip-row" id="identifierChips" translate="no"></div>
+        </div>
+        <div class="suggest-group">
+          <h3>Metin/String değerleri <span class="suggest-hint">(tırnak içi sabit değerler)</span></h3>
+          <div class="chip-row" id="literalChips" translate="no"></div>
+        </div>
+      </div>
+
+      <div class="glossary">
+        <div class="workspace-bar" aria-label="Proje sözlüğü">
+          <label for="workspaceSelect">Aktif proje</label>
+          <select id="workspaceSelect" translate="no"></select>
+          <input id="newWorkspaceName" type="text" maxlength="60" placeholder="Yeni proje adı">
+          <button id="createWorkspace" type="button">Proje oluştur</button>
+          <label for="workspaceRetention">Saklama</label>
+          <select id="workspaceRetention">
+            <option value="0">Süresiz</option><option value="1">1 gün</option><option value="7">7 gün</option>
+            <option value="30">30 gün</option><option value="90">90 gün</option>
+          </select>
+          <button id="renameWorkspace" type="button">Adını değiştir</button>
+          <button id="deleteWorkspace" class="danger" type="button">Projeyi sil</button>
+        </div>
+        <p class="workspace-hint" id="workspaceHint">Bu projedeki karşılıklar popup ve desteklenen sohbet sitelerinde de kullanılır. Süre seçerseniz, proje o süre boyunca kullanılmadığında sözlüğü kalıcı olarak silinir.</p>
+        <div class="glossary-head">
+          <h2>Sözlük</h2>
+          <span class="glossary-count" id="glossaryCount">0 kayıt</span>
+        </div>
+        <div class="manual-add">
+          <input type="text" id="manualReal" placeholder="Gerçek terim (ör. Ahmet Yılmaz, ABC Ödeme A.Ş.)">
+          <input type="text" id="manualPlaceholder" placeholder="Yerine geçecek ad (boş bırakılırsa otomatik)">
+          <button id="addManual" type="button">Ekle</button>
+        </div>
+        <div class="table-wrap">
+          <table id="glossaryTable">
+            <thead><tr><th>Gerçek değer</th><th>Yerine</th><th>Tür</th><th>Güven</th><th></th></tr></thead>
+            <tbody id="glossaryBody"></tbody>
+          </table>
+        </div>
+        <div class="glossary-actions">
+          <button id="copyGlossary" type="button">Sözlüğü JSON kopyala</button>
+          <label class="import-btn">Sözlük içe aktar
+            <input type="file" id="importFile" accept="application/json" hidden>
+          </label>
+          <button id="clearGlossary" class="danger" type="button">Sözlüğü temizle</button>
+        </div>
+
+        <div class="excluded-wrap" id="excludedWrap" hidden>
+          <h3>Hariç Tutulanlar <span class="suggest-hint">(bu değerler otomatik taramada bulunsa da bir daha maskelenmez)</span></h3>
+          <div class="excluded-list" id="excludedList" translate="no"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mode-panel" data-panel="unmask" hidden>
+      <p class="example-note">AI'nın verdiği cevabı buraya yapıştırın; sözlükteki placeholder'lar gerçek değerlerle değiştirilecek.</p>
+      <div class="pane full">
+        <div class="pane-head"><label for="unmaskInput">AI çıktısı (placeholder içeren)</label></div>
+        <textarea id="unmaskInput" spellcheck="false"></textarea>
+      </div>
+      <div class="unmask-actions">
+        <button class="run-btn unmask-run" id="runUnmask" type="button">Gerçek değerleri geri koy →</button>
+        <button class="run-btn unmask-run is-secondary" id="runUnmaskSelection" type="button"
+                title="Yukarıdaki metinde seçtiğiniz bölümdeki placeholder'ları gerçek değerine döndürür; seçmediğiniz yerler maskeli kalır.">
+          Yalnızca seçimi geri aç</button>
+      </div>
+      <p class="secim-durum" id="unmaskSelectionNote" role="status" aria-live="polite" hidden></p>
+      <div class="pane full">
+        <div class="pane-head">
+          <label for="unmaskOutput">Son hâli</label>
+          <button class="copy-btn" type="button" data-copy="unmaskOutput">Kopyala</button>
+        </div>
+        <textarea id="unmaskOutput" spellcheck="false" readonly></textarea>
+      </div>
+    </section>
+
+    <section class="mode-panel" data-panel="dosya" hidden>
+      <p class="example-note">
+        Excel/CSV dosyanızı AI'ya <strong>hiç göndermeden</strong> analiz ettirmek için: dosyayı bırakın, uzantı
+        yapısını çıkarsın ve <strong>aynı şekilde ama tamamen uydurma</strong> bir örnek üretsin. AI'ya bu örneği
+        verirsiniz, o size <em>kod</em> döndürür, kodu kendi gerçek dosyanızda çalıştırırsınız.
+        Birden fazla ilişkili dosya ekleyebilirsiniz — ortak anahtarlar tespit edilir ve
+        <strong>aynı gerçek değer her dosyada aynı sahte değere</strong> dönüşür, böylece join'ler bozulmaz.
+      </p>
+
+      <div class="drop-zone" id="dropZone" tabindex="0" role="button"
+           aria-label="Excel veya CSV dosyası seçin">
+        <input multiple type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xlsm,.xlsb,.xls" hidden>
+        <strong>Excel veya CSV dosyanızı buraya sürükleyin</strong>
+        <span class="drop-sub">ya da tıklayıp seçin · .xlsx .xls .csv · dosya tarayıcınızdan çıkmaz</span>
+      </div>
+
+      <div class="file-status" id="fileStatus" hidden>
+        <span id="fileStatusText"></span>
+        <div class="progress-track" id="progressTrack" hidden>
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div id="fileResult" hidden>
+        <div class="file-tabs" id="fileTabs"></div>
+        <div class="file-meta" id="fileMeta"></div>
+
+        <div class="kanun-warning" id="kanunWarning" hidden></div>
+        <div class="type-warning" id="typeWarning" role="status" hidden></div>
+        <div class="relations-box" id="relationsBox" hidden></div>
+
+        <div class="file-mode-switch" role="group" aria-label="Dosya İşlem Modu">
+          <button type="button" class="fmode-btn is-active" id="btnModeSynthetic">Sahte örnek üret (AI için)</button>
+          <button type="button" class="fmode-btn" id="btnModeMaskFile">Gerçek dosyayı maskele</button>
+        </div>
+
+        <div id="fileMaskBar" class="file-mask-bar" hidden>
+          <div class="file-mask-desc">
+            <strong>Seçmeli dosya maskeleme:</strong>
+            Aşağıdaki <em>Kolon Denetimi</em> tablosundan her kolon için yöntem seçin (sentetik, kısmi yıldızlama, token, boşalt veya koru). Dosyanın bütün satırları tarayıcınızda işlenir ve maskelenmiş dosya olarak indirilir.
+          </div>
+          <div class="file-mask-actions">
+            <button class="run-btn mask-run" id="btnExecuteMaskExcel" type="button">Maskelenmiş Excel indir (.xlsx)</button>
+            <button class="run-btn scan-run" id="btnExecuteMaskCsv" type="button">Maskelenmiş CSV indir</button>
+          </div>
+          <div class="file-mask-audit" id="fileMaskAudit" hidden></div>
+        </div>
+
+        <div class="file-controls">
+          <label class="fc-item" id="sheetWrap" hidden>
+            Sayfa
+            <select id="sheetSelect" translate="no"></select>
+          </label>
+          <label class="fc-item">
+            Başlık satırı
+            <select id="headerRowSelect"></select>
+          </label>
+          <label class="fc-item">
+            Örnek satır sayısı
+            <select id="rowCountSelect">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="30">30</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <label class="fc-item">
+            AI'dan istediğim
+            <select id="taskSelect">
+              <optgroup label="Genel">
+                <option value="gorsellestirme" selected>Görselleştirme / grafik</option>
+                <option value="analiz">Keşifsel analiz</option>
+                <option value="pivot">Özet / pivot tablo</option>
+                <option value="temizlik">Veri temizliği</option>
+                <option value="sql">SQL sorguları</option>
+              </optgroup>
+              <optgroup label="Biletleme / etkinlik">
+                <option value="doluluk">Doluluk oranı (blok/kategori)</option>
+                <option value="satis_egrisi">Satış eğrisi (maç gününe kadar)</option>
+                <option value="noshow">No-show analizi (turnike vs satış)</option>
+                <option value="kanal">Kanal kırılımı (web/mobil/gişe)</option>
+                <option value="rfm">RFM / müşteri segmentasyonu</option>
+                <option value="kombine">Kombine yenileme ve katılım</option>
+                <option value="fiyatlama">Fiyat esnekliği / dinamik fiyatlama</option>
+                <option value="karaborsa">Karaborsa / anormal alım tespiti</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="fc-item">
+            Örnek biçimi
+            <select id="formatSelect">
+              <option value="csv" selected>CSV</option>
+              <option value="sql">SQL (Oracle) — CREATE + INSERT</option>
+            </select>
+          </label>
+        </div>
+
+        <section class="no-show-panel" id="noShowPanel" aria-labelledby="noShowTitle" hidden>
+          <h3 id="noShowTitle">No-show hesabı için eşleştirme</h3>
+          <p>Kolonları siz seçin. Bu seçimler yalnızca prompt'a gider; eksik bilgi varsa AI'dan kod yazmasını değil önce soru sormasını isteyeceğiz.</p>
+          <div class="no-show-grid">
+            <label class="fc-item">Satış tablosu<select id="noShowSalesTable"></select></label>
+            <label class="fc-item">Tekil bilet anahtarı<select id="noShowSalesKey"></select></label>
+            <label class="fc-item">Turnike tablosu<select id="noShowScanTable"></select></label>
+            <label class="fc-item">Turnike bilet anahtarı<select id="noShowScanKey"></select></label>
+            <label class="fc-item">Satış etkinlik kolonu<select id="noShowSalesEvent"></select></label>
+            <label class="fc-item">Turnike etkinlik kolonu<select id="noShowScanEvent"></select></label>
+          </div>
+          <label class="no-show-check"><input id="noShowOneEvent" type="checkbox"> İki girdi de önceden tek bir etkinliğe filtrelendi</label>
+          <label class="fc-item no-show-policy">Geçerli biletleri nasıl belirleyelim?
+            <select id="noShowDenominator">
+              <option value="">Bir kural seçin…</option>
+              <option value="filtered">Satış girdisi zaten geçerli biletlerle filtreli</option>
+              <option value="status">Satıştaki durum kolonunu kullan</option>
+            </select>
+          </label>
+          <div class="no-show-grid" id="noShowStatusFields" hidden>
+            <label class="fc-item">Satış durum kolonu<select id="noShowSalesStatus"></select></label>
+            <label class="fc-item">Geçerli durum değerleri
+              <input id="noShowValidStatuses" type="text" placeholder="Örn. Satıldı, Aktif">
+            </label>
+          </div>
+          <label class="no-show-check" id="noShowFilteredConfirmWrap" hidden><input id="noShowFilteredConfirm" type="checkbox"> Satış girdisinden iptal, iade ve geçersiz biletler çıkarıldı</label>
+          <label class="no-show-check"><input id="noShowSuccessfulScans" type="checkbox"> Turnike girdisi yalnızca başarılı giriş kayıtlarını içeriyor</label>
+          <div class="no-show-readiness" id="noShowReadiness" role="status" aria-live="polite"></div>
+        </section>
+
+        <div class="leak-warning" id="leakWarning" hidden></div>
+
+        <div class="review">
+          <div class="review-head">
+            <h2>Kolon Denetimi</h2>
+            <span class="suggest-hint">Soldaki sütun sizde kalan gerçek değer, sağdaki AI'ya gidecek sahte karşılığı. Tespit yanlışsa açılır listeden düzeltin.</span>
+          </div>
+          <div class="table-wrap">
+            <table id="colTable">
+              <thead>
+                <tr>
+                  <th>Kolon</th>
+                  <th>Ne olduğu</th>
+                  <th>Güven</th>
+                  <th>Ne gönderilecek</th>
+                  <th>Sizde kalan (gerçek)</th>
+                  <th>Gidecek (sahte)</th>
+                  <th>Başlığı gizle</th>
+                </tr>
+              </thead>
+              <tbody id="colBody"></tbody>
+            </table>
+          </div>
+          <p class="conf-legend">
+            <span class="conf-badge certain">kesin</span> checksum ile doğrulandı ·
+            <span class="conf-badge high">yüksek</span> örüntü + başlık uyuşuyor ·
+            <span class="conf-badge medium">orta</span> tek sinyal ·
+            <span class="conf-badge low">düşük</span> tahmin — gözden geçirin
+          </p>
+        </div>
+
+        <div class="action-row">
+          <button class="run-btn mask-run" id="buildPromptBtn" type="button">Prompt'u oluştur →</button>
+          <button class="run-btn scan-run" id="regenBtn" type="button">Sahte veriyi yenile</button>
+          <button class="run-btn scan-run" id="addFileBtn" type="button">+ İlişkili dosya ekle</button>
+        </div>
+
+        <div class="pane full file-prompt" id="promptWrap" hidden>
+          <div class="pane-head">
+            <label for="promptBox">AI'ya yapıştıracağınız hazır prompt — tek ihtiyacınız olan bu</label>
+            <div class="pane-head-actions">
+              <button class="copy-btn" type="button" data-copy="promptBox" data-review="outbound">Kontrol et ve kopyala</button>
+              <button class="copy-btn" id="downloadDummy" type="button">Sahte dosyayı indir</button>
+            </div>
+          </div>
+          <textarea id="promptBox" spellcheck="false" readonly></textarea>
+          <p class="pick-hint">Bu metin veri pasaportunu ve sahte örnek satırları zaten içeriyor. Parçalarını ayrı ayrı görmek isterseniz aşağıyı açın.</p>
+        </div>
+
+        <details class="file-details" id="fileOutput" hidden>
+          <summary>Parçaları ayrı gör: veri pasaportu ve sahte satırlar</summary>
+          <div class="split">
+            <div class="pane">
+              <div class="pane-head">
+                <label for="passportBox">Veri pasaportu — dosyanızın tarifi</label>
+                <button class="copy-btn" type="button" data-copy="passportBox" data-review="outbound">Kontrol et ve kopyala</button>
+              </div>
+              <textarea id="passportBox" spellcheck="false" readonly></textarea>
+            </div>
+            <div class="pane">
+              <div class="pane-head">
+                <label for="dummyBox">Sahte örnek satırlar — tek bir gerçek kayıt yok</label>
+                <button class="copy-btn" type="button" data-copy="dummyBox" data-review="outbound">Kontrol et ve kopyala</button>
+              </div>
+              <textarea id="dummyBox" spellcheck="false" readonly></textarea>
+            </div>
+          </div>
+        </details>
+
+        <div class="synthetic-audit-card" id="syntheticAuditCard" hidden>
+          <div class="synthetic-audit-head">
+            <strong>Sentetik Veri Kalite & Gizlilik Raporu</strong>
+            <span class="synthetic-audit-badge" id="syntheticAuditScoreBadge"></span>
+          </div>
+          <p class="synthetic-audit-scope" id="syntheticAuditScope" role="status"></p>
+          <div class="synthetic-audit-grid" id="syntheticAuditGrid"></div>
+          <p class="synthetic-audit-disclaimer"><strong>NIST SP 800-226:</strong> Bu metrikler sentetik örneğin biçimsel ve istatistiksel tutarlılığını ölçer. Mutlak diferansiyel gizlilik (differential privacy) veya anonimlik garantisi değildir.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dosya işleri: her araç kendi sayfasıdır. Çerçeve, araç ilk açıldığında
+         yüklenir (data-src); sekme açılmadan hiçbir araç arka planda çalışmaz. -->
+    <section class="mode-panel" data-panel="dedup" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>Tekilleştirme</strong>
+          <span>Listelerdeki tekrar eden kayıtları bulur; bir listeden diğerlerinde olanları çıkarır (A − B).</span>
+        </div>
+        <a href="kitle-tekillestirme/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="kitle-tekillestirme/index.html" title="Tekilleştirme"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="split" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>CSV bölme</strong>
+          <span>Büyük bir CSV'yi satır sayısına veya boyuta göre parçalara ayırır; Excel'in satır sınırını aşan dosyalar için.</span>
+        </div>
+        <a href="csv-bolme/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="csv-bolme/index.html" title="CSV bölme"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="fuzzy" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>Bulanık eşleme</strong>
+          <span>Yazımı birebir tutmayan şirket, cari ve tutar kayıtlarını iki liste arasında eşleştirir.</span>
+        </div>
+        <a href="bulanik-esleme/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="bulanik-esleme/index.html" title="Bulanık eşleme"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="pdf" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>PDF</strong>
+          <span>PDF'leri birleştirir, böler, sayfa çıkarır, döndürür ve siler.</span>
+        </div>
+        <a href="pdf-istasyonu/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="pdf-istasyonu/index.html" title="PDF"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="unpivot" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>Genişten uzuna</strong>
+          <span>Aylar gibi sütunlara yayılmış değerleri satırlara çevirir (unpivot); Power BI ve SQL için.</span>
+        </div>
+        <a href="unpivot/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="unpivot/index.html" title="Genişten uzuna"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="diff" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>Tablo karşılaştırma</strong>
+          <span>İki tablo sürümünü anahtar sütuna göre hücre hücre karşılaştırır: eklenen, silinen, değişen.</span>
+        </div>
+        <a href="tablo-farki/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="tablo-farki/index.html" title="Tablo karşılaştırma"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="encoding" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>Karakter onarma</strong>
+          <span>ERP çıktılarındaki bozuk Türkçe karakterleri (Windows-1254) onarır; Excel'de doğru açılan UTF-8 kaydeder.</span>
+        </div>
+        <a href="encoding-kurtarici/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="encoding-kurtarici/index.html" title="Karakter onarma"></iframe>
+    </section>
+
+    <section class="mode-panel" data-panel="workbench" hidden>
+      <div class="tool-launch">
+        <div class="tool-launch-copy">
+          <strong>Veri Tezgâhı</strong>
+          <span>Tek dosya üzerinde profil ve doğrulama, SQL, gizlilik araçları, tablo dönüştürme ve tarifler.</span>
+        </div>
+        <a href="workbench/index.html" target="_blank" rel="noopener">Tam ekranda aç ↗</a>
+      </div>
+      <iframe class="tool-frame" data-src="workbench/index.html?embed=1" title="Veri Tezgâhı"></iframe>
+    </section>
+  </main>
+
+  <footer>
+    <p>TC Kimlik No, Yabancı Kimlik No, Vergi Kimlik No, IBAN, kredi kartı ve IMEI kontrol basamağı algoritmalarıyla (checksum) doğrulanır — bu yüzden "yüksek güven" etiketlidir. Vergi no ve IMEI ayrıca yakınında ilgili anahtar kelime aranarak doğrulanır, çünkü çıplak bir sayının bu algoritmalardan tesadüfen geçme ihtimali %10'dur. Kontrol basamağının geçerli olması numaranın gerçekten kayıtlı olduğunu kanıtlamaz. E-posta/telefon/tutar/tarih gibi alanlar yalnızca örüntüyle (regex) tespit edildiği için "orta güven"dir; manuel eklenen isim/kod terimleri "düşük güven"dir. Hiçbiri %100 garanti değildir — göndermeden önce önizlemeyi gözden geçirin. Sözlük yalnızca bu tarayıcıda, bu cihazda saklanır; hiçbir sunucuya gönderilmez. Uzantıda desteklenen sohbet siteleri, hızlı pencere ve tam araç aynı sözlüğü kullanır. Ham girdi metniniz (taslak) kalıcı olarak diske yazılmaz, yalnızca o oturum (session) boyunca tutulur. Excel/CSV sekmesinde dosyanız hiç saklanmaz — okunur, yapısı çıkarılır ve sayfayı kapattığınızda gider.</p>
+  </footer>
+</div>
+
+<div class="modal-overlay" id="outboundModal" hidden>
+  <div class="modal-box outbound-box" role="dialog" aria-modal="true" aria-labelledby="outboundTitle">
+    <div class="modal-head">
+      <h2 id="outboundTitle">Gönderim öncesi son kontrol</h2>
+      <button class="modal-close" id="outboundClose" type="button" aria-label="Kapat">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="outboundLead"></p>
+      <div class="outbound-grid" id="outboundFacts"></div>
+      <div class="outbound-warning" id="outboundWarning" hidden></div>
+      <div class="outbound-section" id="outboundFindingsSection" hidden>
+        <strong>Kalan Hassas Adaylar ve İnceleme</strong>
+        <p class="outbound-disclaimer"><strong>Dikkat:</strong> Otomatik tarama bağlamsal veya alışılmadık tüm özel isimleri garanti yakalayamaz. Göndermeden önce aşağıdaki adayları ve önizlemeyi gözden geçiriniz.</p>
+        <div id="outboundFindingsList" class="outbound-findings-list"></div>
+      </div>
+      <div class="outbound-section" id="outboundFilesSection" hidden><strong>Dışa aktarılan tablo takma adları</strong><ul id="outboundFiles" translate="no"></ul></div>
+      <div class="outbound-section" id="outboundHeadersSection" hidden><strong>Kolon adları</strong><ul id="outboundHeaders" translate="no"></ul></div>
+      <div class="outbound-section" id="outboundStatsSection" hidden><strong>Paylaşılan yapısal bilgiler</strong><ul id="outboundStats"></ul></div>
+      <div class="outbound-section" id="outboundRealValuesSection" hidden><strong>Paylaşılacak gerçek değerler ve kategori örnekleri</strong><ul id="outboundRealValues" translate="no"></ul></div>
+      <div class="modal-actions">
+        <button id="outboundCancel" type="button">İptal</button>
+        <button id="outboundRescan" type="button">Yeniden tara</button>
+        <button id="outboundConfirm" class="run-btn" type="button">Onayla ve kopyala</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="redactModal" hidden>
+  <div class="modal-box redact-box" role="dialog" aria-modal="true" aria-labelledby="redactTitle">
+    <div class="modal-head">
+      <h2 id="redactTitle">Görseli karart</h2>
+      <button class="modal-close" id="redactClose" type="button" aria-label="Kapat">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="redact-desc">Görseldeki TCKN, kredi kartı, IBAN, e-posta, telefon ve isim gibi hassas bölgeleri tarayıcınızda tespit edip kapatır. Görselden okunan ham metni ayrıca kopyalayabilirsiniz; bu işlem metni maskelemez. Hiçbir görüntü ağa veya sunucuya gönderilmez.</p>
+      <p class="redact-hint-draw"><strong>İpucu:</strong> OCR'ın kaçırdığı veya metin olmayan alanları (yüz, imza, kaşe, logo) görsel üzerinde fareyle kutu çizerek (drag &amp; drop) karartabilirsiniz. Elle çizilen alanlar ALAN_1 gibi ad alır; etiketini kutu listesinden değiştirebilirsiniz. Çok geniş bir seçim için eklemeden önce onay sorulur.</p>
+      
+      <div class="redact-toolbar">
+        <div class="redact-toolbar-group redact-image-actions">
+          <label class="file-btn" for="redactImageInput">Görsel seç</label>
+          <input type="file" id="redactImageInput" accept="image/*" style="display:none">
+          <button type="button" id="redactClearBtn" class="redact-clear-btn" disabled>Görseli kaldır</button>
+        </div>
+        <label for="redactStyleSelect" class="redact-style-control">
+          <span class="redact-label">Karartma stili</span>
+          <select id="redactStyleSelect" class="redact-select">
+            <option value="black">Siyah bant</option>
+            <option value="label">Etiketli bant</option>
+            <option value="blur" title="Mozaik görünümü alttaki yazıdan değil, çevredeki arka plan renginden ve rastgele gürültüden üretilir; geri çözülemez.">Mozaik (güvenli)</option>
+          </select>
+        </label>
+        <div class="redact-toolbar-actions">
+          <button type="button" id="redactApplyBtn" class="pick-btn" disabled>Karartmayı Önizle</button>
+          <button type="button" id="redactDownloadBtn" class="run-btn mask-run" disabled>Karartılmış görseli indir (PNG)</button>
+        </div>
+      </div>
+
+      <div class="redact-status" id="redactStatus" hidden></div>
+
+      <div class="redact-workspace">
+        <div class="redact-canvas-container">
+          <canvas id="redactCanvas" hidden></canvas>
+          <div id="redactPlaceholderMsg" class="redact-placeholder">
+            Görsel seçin veya panodan (Ctrl+V) yapıştırın
+          </div>
+        </div>
+        <div class="redact-sidebar">
+          <div class="redact-sidebar-head">
+            <strong>Hassas Kutular (<span id="redactBoxCount">0</span>)</strong>
+          </div>
+          <div id="redactBoxList" class="redact-box-list">
+            <p class="redact-empty-hint">Henüz tespit edilen kutu yok.</p>
+          </div>
+          <p class="redact-label-help">Elle çizilen alanlar ALAN_1 gibi adlandırılır; adını buradan değiştirebilirsiniz. “Etiketli bant” seçilirse bu ad görsel üzerine yazılır.</p>
+        </div>
+      </div>
+      <section class="redact-ocr-output" id="redactOcrOutput" hidden aria-labelledby="redactOcrLabel">
+        <div class="redact-ocr-head">
+          <label id="redactOcrLabel" for="redactOcrText">OCR ile okunan metin</label>
+          <button type="button" id="redactOcrCopyBtn" class="copy-btn" disabled>OCR metnini kopyala</button>
+        </div>
+        <textarea id="redactOcrText" rows="5" readonly spellcheck="false" aria-describedby="redactOcrWarning"></textarea>
+        <p id="redactOcrWarning" class="redact-ocr-warning">Bu, görselden okunan ham metindir; henüz maskelenmemiştir ve kişisel bilgi içerebilir. Kopyalamadan önce kontrol edin.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="infoModal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+    <div class="modal-head">
+      <h2 id="infoModalTitle">Nasıl Kullanılır?</h2>
+      <button class="modal-close" id="infoModalClose" type="button" aria-label="Kapat">×</button>
+    </div>
+    <div class="modal-body">
+      <h3>Ne işe yarar?</h3>
+      <p>Kod veya metin içindeki hassas bilgileri (isim, IBAN, TC kimlik no, kredi kartı, e-posta, tutar, tarih, kod içindeki değişken/tablo adları vb.) bir AI sohbet aracına göstermeden önce yerel olarak <code>[PLACEHOLDER]</code> ile değiştirir. Hiçbir metin bu sayfadan dışarı gönderilmez — tüm işlem tarayıcınızda çalışır.</p>
+
+      <h3>Adım adım</h3>
+      <ol>
+        <li>Metninizi/kodunuzu <strong>"Orijinal metin / kod"</strong> kutusuna yapıştırın — ya da bir ekran görüntüsünü doğrudan <strong>Ctrl+V</strong> ile yapıştırın, yazı otomatik olarak okunur (OCR).</li>
+        <li><strong>"Maskele →"</strong> butonuna basın. IBAN, TCKN, kredi kartı, e-posta, telefon, tutar, tarih gibi yaygın alanlar otomatik tespit edilip yerine konur.</li>
+        <li>Taramanın kaçırdığı bir şey varsa (bir kod değişkeni, düz bir sayı, bir isim): metinde seçip <strong>"Seçili metni maskeye ekle"</strong> ile işaretleyin, ya da <strong>"Değişken/tanımlayıcı tara"</strong> ile otomatik öneriler alıp tek tıkla ekleyin.</li>
+        <li><strong>"Maskeleme Özeti"</strong>nde ne kadar şeyin maskelendiğini ve güven seviyelerini görün — kopyalamadan önce bir kez gözden geçirin.</li>
+        <li>Önizlemede <strong>yanlış maskelenmiş bir yer varsa üstüne tıklayın</strong> — maskesi anında kalkar, sözlükte aramanıza gerek yok. Üzerine gelince hangi gerçek değer olduğunu görürsünüz. Yanlışlıkla tıklarsanız altta çıkan <strong>"Geri getir"</strong> ile aynı placeholder'la geri döner.</li>
+        <li><strong>"Kopyala"</strong> ile maskeli metni alıp AI'ya yapıştırın.</li>
+        <li>AI'nın cevabını alınca <strong>"Geri Aç"</strong> sekmesine geçin, cevabı yapıştırıp <strong>"Gerçek değerleri geri koy"</strong> deyin — placeholder'lar gerçek değerlere döner.</li>
+      </ol>
+
+      <h3>Güven seviyeleri ve 18 Tür Taraması</h3>
+      <ul>
+        <li><strong>Yüksek / Kesin</strong> — TCKN, VKN, IBAN, Kredi Kartı (Luhn), IMEI gibi resmi kontrol basamağı (checksum) formülüyle doğrulanmış alanlar.</li>
+        <li><strong>Orta</strong> — E-posta, telefon, IP/Port, MAC, SSN, KEP, plaka, UUID, kripto cüzdan, gizli anahtar (JWT), tutar ve tarih gibi örüntüyle (regex) tespit edilenler.</li>
+        <li><strong>Bağlamsal / Düşük</strong> — Unvan ve eylemlerden önerilen kişi adları, adres adayları ve manuel eklediğiniz terimler; onayınıza dayanır.</li>
+        <li><em>Görünmez karakter koruması:</em> Karakterler arasına gizlenen sıfır genişlikli boşluklar (<code>\u200B</code> vb.) çift yönlü haritalamayla yakalanır; kayıpsız korunur.</li>
+      </ul>
+
+      <h3>Metin Maskeleme ve Sözlük Butonları</h3>
+      <ul>
+        <li><strong>Maskele →:</strong> Metni 18 kurala göre yerel olarak maskeler ve çıktıyı üretir.</li>
+        <li><strong>Adayları tara:</strong> Metne dokunmadan hassas adayları ve kod tanımlayıcılarını listeler.</li>
+        <li><strong>Seçili metni maskeye ekle:</strong> Metinde fareyle seçtiğiniz özel bir kelime veya kodu fosforlu kalem gibi işaretleyip sözlüğe dahil eder.</li>
+        <li><strong>Kontrol et ve kopyala:</strong> Kopyalamadan önce "Gönderim Öncesi Son Kontrol" penceresini açar; kalan şüpheli terimleri onaylatır.</li>
+        <li><strong>Proje Sözlüğü:</strong> Projeler oluşturabilir, 1–90 gün saklama süresi belirleyebilir, sözlüğü JSON olarak dışa/içe aktarabilirsiniz.</li>
+      </ul>
+
+      <h3>Görsel Karartma & Çevrimdışı OCR</h3>
+      <p>Görseller hiçbir sunucuya gönderilmeden tarayıcıda işlenir:</p>
+      <ul>
+        <li><strong>Yerel OCR:</strong> Türkçe/İngilizce metinler okunur; TCKN, kredi kartı, isim koordinatları otomatik karartılır.</li>
+        <li><strong>Serbest Elle Çizim:</strong> Kaşe, ıslak imza, vesikalık fotoğraf veya logoları tuval üzerinde fareyle kutu çizerek (drag & drop) kapatabilirsiniz.</li>
+        <li><strong>Stiller:</strong> Opak siyah bant, etiketli bant veya alttaki pikselleri gürültüyle imha eden geri çözülemez güvenli mozaik uygulanabilir.</li>
+      </ul>
+
+      <h3>Sohbet Sitelerinde Maskeleme (ChatGPT, Claude, Gemini, AI Studio)</h3>
+      <ul>
+        <li><strong>Yapıştırırken Maskele:</strong> Sohbet kutusuna metin yapıştırdığınız an (Ctrl+V) siteye ulaşmadan yerel olarak maskelenir; sitenin taslak senkronizasyonu ham veriyi göremez.</li>
+        <li><strong>Gönderim Öncesi Uyarı:</strong> Metin kutusunda açıkta kalan TCKN veya IBAN varsa Gönder'e ilk basış durdurulur ve uyarı verilir.</li>
+        <li><strong>⠿ Sürükle ve Sabitle:</strong> Kumandayı ekranın dilediğiniz köşesine taşıyabilirsiniz; sohbet kutusu büyüse de titremez veya mesajların üstünü kapatmaz.</li>
+        <li><strong>↺ Sıfırla & − Küçük Rozet:</strong> Butonu varsayılan konumuna döndürür veya 34×34 px yuvarlak maske simgesine küçültür.</li>
+      </ul>
+
+      <h3>Geri Açma (Unmask) Butonları</h3>
+      <ul>
+        <li><strong>Gerçek değerleri geri koy →:</strong> AI yanıtındaki tüm yer tutucuları sözlükle eşleştirip orijinal metne çevirir.</li>
+        <li><strong>Yalnızca seçimi geri aç:</strong> Uzun bir metnin yalnızca seçtiğiniz cümlesini veya tablosunu açar, geri kalan yerleri maskeli bırakır.</li>
+      </ul>
+
+      <h3>Hariç tutma ve sözlük</h3>
+      <p>Bir değerin yanlışlıkla maskelendiğini düşünüyorsanız en hızlı yol önizlemede üstüne tıklamaktır. Aynı işi sözlükteki <strong>"Hariç tut"</strong> düğmesi de yapar (<strong>"Geri al"</strong> ile iptal edilir). Elle eklediğiniz bir terim tıklandığında sözlükten silinir; otomatik bulunan bir değer ise hariç tutulanlara alınır — çünkü sadece silinseydi bir sonraki maskelemede yeniden bulunurdu. Uzantıda sözlük ve hariç tutulanlar desteklenen sohbet siteleriyle ortaktır; bir sohbette oluşturduğunuz maskeyi hızlı pencerede veya tam araçta geri açabilirsiniz.</p>
+
+      <h3>Tablo örneği — Excel/CSV dosyasını hiç göndermeden analiz ettirme</h3>
+      <p>Amaç şu: AI'ya "şu satışlarımı grafiğe dök" demek istiyorsunuz ama gerçek dosyayı vermek istemiyorsunuz. Grafik <em>kodunu</em> yazmak için AI'nın gerçek rakamlara ihtiyacı yok — verinin <strong>şekline</strong> ihtiyacı var.</p>
+      <ol>
+        <li>Dosyanızı sürükleyin. Ayrıştırma tarayıcıda olur, dosya hiçbir yere gitmez.</li>
+        <li>Uzantı iki şey üretir: <strong>veri pasaportu</strong> (kolonlar, tipler, aralıklar, boş oranları — tek bir gerçek kayıt içermez) ve <strong>sahte örnek satırlar</strong> (aynı yapıda, tamamen uydurma).</li>
+        <li><strong>Kolon Denetimi</strong> tablosunda iki sütun yan yana durur: <strong>"Sizde kalan"</strong> dosyanızdaki gerçek bir örnek değerdir (ekranınızdan çıkmaz, yalnızca karşılaştırasınız diye gösterilir), <strong>"Gidecek"</strong> ise AI'ya gönderilecek sahte karşılığıdır. Neyin değiştiğini buradan görürsünüz. Tespit yanlışsa açılır listeden düzeltin.</li>
+        <li>Sarı uyarı kutusu, <strong>gerçek değerlerin gönderileceği</strong> kolonları listeler — bakmanız gereken tek yer orasıdır. Varsayılan olarak sadece il/ay/gün gibi kişiyi işaret etmeyen bilinen sözlükler geçer.</li>
+        <li>"Prompt'u oluştur" deyip çıkan metni AI'ya yapıştırın. Bu tek metin veri pasaportunu ve sahte satırları zaten içerir — parçalarını ayrı görmek isterseniz altındaki "Parçaları ayrı gör" bölümünü açın. AI size <strong>kod</strong> döndürür; kodu kendi gerçek dosyanızda çalıştırırsınız.</li>
+      </ol>
+      <p><strong>Neden bu daha güvenli?</strong> Maskelemede tespit hatası sızıntıya yol açar. Burada veri dönüştürülmüyor, sıfırdan üretiliyor — tespit hatası yalnızca örneği daha az gerçekçi yapar, hiçbir gerçek kayıt dışarı çıkmaz.</p>
+
+      <h3>Güven dereceleri (Kesin, Yüksek, Orta, Düşük)</h3>
+      <p>Kolon Denetimi tablosunda her kolonun yanında bir güven rozeti görürsünüz. Sistem olasılıksal tahmin değil, matematiksel kanıt toplar:</p>
+      <ul>
+        <li><strong>Kesin:</strong> Checksum doğrulaması yapılmıştır (TCKN, VKN, IBAN, Kredi Kartı Luhn formülü). 50 satırın tamamı matematiksel formülü geçiyorsa sonuç kesindir.</li>
+        <li><strong>Yüksek:</strong> Başlık adı ile hücrelerin %90+'ında uyuşan örüntü birbirini teyit etmiştir (örn. <code>eposta</code> başlığı + e-posta formatı).</li>
+        <li><strong>Orta:</strong> Tek sinyal vardır; başlık ipucu vermiyordur ama veri uyuyordur veya başlık vardır ama veri karışıktır. Göz ucuyla kontrol önerilir.</li>
+        <li><strong>Düşük:</strong> Belirgin örüntü yoktur; istatistiki genel bir tahmindir. Açılır kutudan doğru tipi elle seçmeniz tavsiye edilir.</li>
+        <li><em>Çeşitlilik süzgeci:</em> Çok az benzersiz değere sahip kolonlar (örn. sürekli "Kredi Kartı" yazan hücreler) ad-soyad sanılmaz; çeşitlilik az olduğu için otomatikman kategori sayılır.</li>
+      </ul>
+
+      <h3>Butonlar ve Kontroller Ne İşe Yarar?</h3>
+      <ul>
+        <li><strong>Sahte örnek üret / Gerçek dosyayı maskele:</strong> Üstteki mod anahtarıdır. İlki AI için güvenli prompt ve sahte tablo üretir; ikincisi tüm dosyanın anonimleştirilmiş kopyasını indirir.</li>
+        <li><strong>Sayfa ve Başlık Satırı:</strong> Çok sayfalı Excel'lerde çalışma sayfasını ve kolon başlıklarının kaçıncı satırda olduğunu seçer.</li>
+        <li><strong>Prompt'u oluştur:</strong> Pasaportu ve sentetik veriyi birleştiren tam AI prompt'unu üretip metin kutusuna yazar.</li>
+        <li><strong>Sahte veriyi yenile:</strong> Kuralları değiştirmeden yeni bir rastgele tohumla başka sahte değerler türetir.</li>
+        <li><strong>+ İlişkili dosya ekle:</strong> İkinci/üçüncü tabloyu bağlar; ortak anahtarlardaki aynı gerçek değer her iki dosyada da aynı sahte değere dönüşerek JOIN ilişkisini korur.</li>
+        <li><strong>Kontrol et ve kopyala:</strong> Kopyalamadan önce "Kalan Risk İnceleme" modalını açarak sızıntı denetimi yaptırır.</li>
+        <li><strong>Maskelenmiş Excel / CSV indir:</strong> Maskeleme modunda tüm satırları işleyip temizlenmiş dosyayı kaydeder.</li>
+      </ul>
+
+      <h3>Birden fazla ilişkili dosya</h3>
+      <p>Analizde elinizde genelde tek dosya olmaz: biletler + etkinlikler + turnike gibi birbirine bağlı tablolar olur. <strong>"+ İlişkili dosya ekle"</strong> ile hepsini yükleyin.</p>
+      <ul>
+        <li>Ortak anahtarlar (aynı kolon adı ya da örtüşen değerler) otomatik bulunur ve üstte listelenir.</li>
+        <li>Aynı gerçek değer <strong>her dosyada aynı sahte değere</strong> dönüşür — yani AI'nın yazdığı <code>JOIN</code> örnek veride de satır döndürür, gerçek verinizde de çalışır.</li>
+        <li>Tarih ve tutar kolonları anahtar sayılmaz; iki tarihin örtüşmesi ilişki değil, aynı döneme ait olmalarıdır.</li>
+      </ul>
+
+      <h3>Neler korunur?</h3>
+      <p>Sahte veri rastgele değildir; analizin doğru çıkması için verinin şu özellikleri taklit edilir:</p>
+      <ul>
+        <li><strong>Zaman dağılımının şekli</strong> — satış maç gününe doğru patlıyorsa sahte veride de patlar. Düz rastgele tarih üretilse AI yanlış grafiği önerirdi.</li>
+        <li><strong>Hiyerarşi</strong> — stadyum → blok → sıra gibi bağlar korunur; bir blok iki stadyuma bağlı çıkmaz.</li>
+        <li><strong>Türetilmiş kolonlar</strong> — <code>toplam = adet × fiyat</code> ilişkisi bulunur ve sahte veride de tutar.</li>
+        <li><strong>Dağılım, aralık, boş oranı ve benzersiz değer sayısı</strong> — grafik tipini bunlar belirler.</li>
+      </ul>
+
+      <h3>Biletleme / etkinlik verisi</h3>
+      <p>Bilet, koltuk, kombine, turnike, kanal, kart BIN gibi alanlar tanınır. Kulüp, stadyum, lig, kanal, bilet kategorisi ve banka adları <strong>gerçek gönderilir</strong> — bunlar kişiyi işaret etmez ve sahteye çevrilirse grafikler anlamsızlaşır.</p>
+      <p>TC Kimlik No, pasaport veya Passo Taraftar Kart kolonu görülürse ayrı bir uyarı çıkar: 6222 sayılı Kanun gereği her bilet bir kimliğe tanımlı olduğu için bu tablolar yapısı gereği kimliğe bağlıdır. Bu kolonların gerçek değerleri hiçbir koşulda gönderilmez.</p>
+
+      <h3>Büyük dosyalar</h3>
+      <p>Okuma, ayrıştırma ve kolon profilleme bir arka plan iş parçacığında (Web Worker) yapılır; arayüz bu sırada donmaz. Üstte ilerleme çubuğu görürsünüz. 77 MB'lık 600.000 satırlık bir CSV'de ölçüm: <strong>ayrıştırma ~5 sn (arka planda), arayüzün bloklandığı süre ~0,2 sn</strong>.</p>
+      <p>Başlık satırını veya sayfayı değiştirdiğinizde dosya baştan okunmaz — satırlar arka planda tutulur, sadece yeniden profillenir.</p>
+      <p>İstatistikler tüm satırlardan değil, dosyaya eşit aralıklarla yayılmış en fazla 20.000 satırlık bir örneklemden çıkarılır; bu, dağılımı doğru yakalamak için fazlasıyla yeterlidir ve pasaportta belirtilir.</p>
+
+      <h3>SQL modu</h3>
+      <p>"Örnek biçimi" seçicisinden <strong>SQL (Oracle)</strong> derseniz CSV yerine <code>CREATE TABLE</code> + örnek <code>INSERT</code> üretilir; tip çıkarımı (NUMBER / VARCHAR2 / DATE), türetilmiş kolon ve ortak anahtar notlarıyla birlikte.</p>
+
+      <h3>Hızlı popup</h3>
+      <p>Araç çubuğundaki simgeye tıklayınca açılan küçük pencerede tek tuşla maskele+kopyala yapabilir, oradan bu tam araca da geçebilirsiniz. Pencere siz kapatana kadar açık kalır.</p>
+    </div>
+  </div>
+</div>
+
+<script src="tesseract/tesseract.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="checkdigits.js"></script>
+<script src="type-catalog.js"></script>
+<script src="intl-pack.js"></script>
+<script src="passo-pack.js"></script>
+<script src="mask-engine.js"></script>
+<script src="glossary-store.js"></script>
+<script src="csv-io.js"></script>
+<script src="table-engine.js"></script>
+<script src="index.js"></script>
+<script src="file-mask-engine.js"></script>
+<script src="table-ui.js"></script>
+</body>
+</html>

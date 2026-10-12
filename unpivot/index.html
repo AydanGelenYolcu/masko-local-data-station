@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masko — Genişten Uzuna Tablo Dönüştürücü (Unpivot / Reverse Pivot)</title>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="unpivot-panel.css">
+</head>
+<body>
+  <div class="unpivot-app">
+    <header class="unpivot-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <h1>Genişten uzuna dönüştürme <span class="unpivot-badge">unpivot</span></h1>
+      </div>
+      <div style="font-size:var(--fs-xs); color:var(--ink-muted);">
+        Sütunlara yayılmış değerleri satırlara çevirir; Power BI ve SQL için.
+      </div>
+    </header>
+
+    <!-- 1. DOSYA YÜKLEME KARTI -->
+    <section class="card" id="dropCard">
+      <div class="drop-card" id="dropZone">
+        <h3 id="labelFileName">Excel veya CSV Tablonu Buraya Bırak</h3>
+        <p class="drop-card-sub" id="labelFileMeta">Çapraz rapor, aylık satışlar, bütçe veya mali tablolar (.xlsx, .csv)</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+      </div>
+    </section>
+
+    <!-- 2. SÜTUN VE KURAL SEÇİMİ (Dosya yüklenince açılır) -->
+    <section class="card config-section" id="configSection" style="display:none;">
+      <h3 style="font-size:var(--fs-md); display:flex; align-items:center; gap:8px;">
+        Sütunlar
+      </h3>
+
+      <div class="column-selectors-grid">
+        <!-- SABİT KALACAK KİMLİK SÜTUNLARI -->
+        <div class="col-box">
+          <div class="col-box-title">
+            <span>Sabit kalacak sütunlar (satır kimlikleri)</span>
+            <span style="font-size:var(--fs-xs); color:var(--text-muted);">Örn: Şube, Ürün, Kategori</span>
+          </div>
+          <div class="col-checkbox-list" id="idColList" translate="no"></div>
+        </div>
+
+        <!-- SATIRLARA AÇILACAK DEĞER SÜTUNLARI -->
+        <div class="col-box">
+          <div class="col-box-title">
+            <span>Satırlara açılacak sütunlar</span>
+            <span style="font-size:var(--fs-xs); color:var(--text-muted);">Örn: Ocak, Şubat, Mart, 2024...</span>
+          </div>
+          <div class="col-checkbox-list" id="valColList" translate="no"></div>
+        </div>
+      </div>
+
+      <!-- ÇIKTI BAŞLIKLARI VE AYARLAR -->
+      <div class="settings-bar">
+        <div class="input-field">
+          <label for="inputAttrName">Dönüşen Sütun Başlığı:</label>
+          <input type="text" id="inputAttrName" value="Dönem" placeholder="Örn: Ay, Yıl, Metrik">
+        </div>
+        <div class="input-field">
+          <label for="inputValName">Değer Sütun Başlığı:</label>
+          <input type="text" id="inputValName" value="Değer" placeholder="Örn: Tutar, Adet">
+        </div>
+        <label style="display:flex; align-items:center; gap:6px; font-size:var(--fs-sm); cursor:pointer;">
+          <input type="checkbox" id="chkSkipEmpty" checked>
+          <span>Boş / Null değerleri atla (Satır tasarrufu)</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- 3. SONUÇ VE ÖNİZLEME KARTI -->
+    <section class="card config-section" id="resultSection" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div class="stats-bar">
+          <div class="stat-chip">
+            <span class="val" id="statInRows">0</span>
+            <span class="lbl">Girdi Satırı</span>
+          </div>
+          <div class="stat-chip">
+            <span class="val" id="statOutRows">0</span>
+            <span class="lbl">Dönüşen Satır</span>
+          </div>
+          <div class="stat-chip">
+            <span class="val" id="statRatio">1x</span>
+            <span class="lbl">Veri Çarpanı</span>
+          </div>
+          <div class="stat-chip">
+            <span class="val" id="statSkipped">0</span>
+            <span class="lbl">Atlanan Boş Değer</span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-success" id="btnExportXlsx">Excel indir (.xlsx)</button>
+          <button class="btn btn-secondary" id="btnExportCsv">CSV indir</button>
+        </div>
+      </div>
+
+      <div class="table-preview-wrap" id="previewTableWrap" translate="no">
+        <!-- Önizleme tablosu dinamik doldurulur -->
+      </div>
+    </section>
+  </div>
+
+  <script src="../vendor/xlsx.full.min.js"></script>
+  <script src="../csv-io.js"></script>
+  <script src="unpivot-engine.js"></script>
+  <script src="unpivot-ui.js"></script>
+</body>
+</html>

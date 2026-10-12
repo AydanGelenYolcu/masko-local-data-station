@@ -1,0 +1,296 @@
+/* Renk, köşe ve ölçü tokenları: ../tokens.css (bu dosyadan önce yüklenir). */
+/* =====================================================
+   BULANIK ÇAPRAZ EŞLEME & MUTABAKAT — CSS
+   Masko Kurumsal Tasarım Sistemi
+   ===================================================== */
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+.fuzzy-app {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.fuzzy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--rule);
+}
+
+.fuzzy-title-group h1 {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.fuzzy-badge {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* DUAL DROPZONE */
+.dual-drop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+}
+
+@media (max-width: 768px) {
+  .dual-drop-grid { grid-template-columns: 1fr; }
+}
+
+.drop-card {
+  border: 2px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  text-align: center;
+  background: var(--surface-alt);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.drop-card:hover, .drop-card.dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.drop-card.loaded {
+  border-style: solid;
+  border-color: var(--ok);
+  background: var(--surface);
+}
+
+.drop-card-icon {
+  font-size: 32px;
+  margin-bottom: var(--sp-2);
+}
+
+.drop-card h3 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.drop-card-sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+/* MATCH CONFIG GRID */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--rule);
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.config-item label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+select, input[type="text"], input[type="number"] {
+  height: var(--h-control);
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+}
+
+select:focus, input:focus {
+  border-color: var(--accent);
+}
+
+/* BUTTONS */
+.btn {
+  height: var(--h-control);
+  padding: 0 16px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule-strong);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-fill);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+/* STATS ROW */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.stat-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.stat-val {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stat-card.ok .stat-val { color: var(--ok); }
+.stat-card.warn .stat-val { color: var(--warn); }
+.stat-card.danger .stat-val { color: var(--danger); }
+
+/* RESULT TABS */
+.result-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--sp-4);
+}
+
+.rtab-btn {
+  padding: 8px 14px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+
+.rtab-btn.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--surface-alt);
+}
+
+/* TABLE STYLES */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  max-height: 480px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-xs);
+  text-align: left;
+}
+
+th {
+  background: var(--surface-alt);
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+}
+
+tr:hover td {
+  background: var(--surface-hover);
+}
+
+.score-badge {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-2xs);
+}
+
+.score-badge.perfect { background: var(--ok-soft); color: var(--ok); }
+.score-badge.high { background: var(--accent-soft); color: var(--accent); }
+.score-badge.medium { background: var(--warn-soft); color: var(--warn); }
+
+/* Sonuç sekmelerindeki durum noktası (eski renkli daire emojilerinin yerine). */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.dot-warn { background: var(--warn); }
+.dot-ok { background: var(--reveal); }
+.dot-danger { background: var(--mask); }

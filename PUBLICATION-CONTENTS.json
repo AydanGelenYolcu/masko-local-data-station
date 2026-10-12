@@ -1,0 +1,17 @@
+{
+  "repository": "AydanGelenYolcu/masko-local-data-station",
+  "source": "dist/masko production build; generated 2026-10-12T22:31:18.009Z",
+  "files": 121,
+  "totalBytes": 21284117,
+  "demoGifs": 12,
+  "excluded": [
+    "context/",
+    "agents/",
+    "tests/",
+    "scratch/",
+    "test-klasoru/",
+    ".playwright-mcp/",
+    "local research notes",
+    "the 84-second video file"
+  ]
+}

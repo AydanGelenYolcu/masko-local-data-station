@@ -1,0 +1,95 @@
+{
+  "manifest_version": 3,
+  "name": "Masko — Yerel Veri İstasyonu",
+  "version": "2.1.0",
+  "description": "Hassas verileri AI araçlarına göndermeden önce tarayıcıda maskeler. Dosyalar cihazınızda işlenir; hiçbir veri sunucuya gönderilmez.",
+  "action": {
+    "default_title": "Masko — Yerel Veri İstasyonu",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "minimum_chrome_version": "102",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://aistudio.google.com/*",
+    "https://gemini.google.com/*",
+    "https://claude.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://aistudio.google.com/*",
+        "https://gemini.google.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "type-catalog.js",
+        "mask-engine.js",
+        "glossary-store.js",
+        "chat-enjeksiyon/yapistirma-kalkani.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": [
+        "chat-enjeksiyon/injector-core.js",
+        "chat-enjeksiyon/adapters/chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://aistudio.google.com/*"
+      ],
+      "js": [
+        "chat-enjeksiyon/injector-core.js",
+        "chat-enjeksiyon/adapters/ai-studio.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "chat-enjeksiyon/injector-core.js",
+        "chat-enjeksiyon/adapters/gemini.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": [
+        "chat-enjeksiyon/injector-core.js",
+        "chat-enjeksiyon/adapters/claude.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' data: blob:; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; frame-src 'self' blob:; form-action 'none'"
+  }
+}

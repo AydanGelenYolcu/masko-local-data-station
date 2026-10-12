@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Masko — Hızlı</title>
+<link rel="icon" type="image/png" href="icons/icon-32.png">
+<script src="tema.js"></script>
+  <script src="dil/en.js"></script>
+  <script src="dil.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="index.css">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<div class="popup">
+  <header class="popup-head">
+    <div class="popup-title">
+      <img src="icons/icon-32.png" alt="Masko" class="popup-logo" width="24" height="24">
+      <h1>Masko</h1>
+    </div>
+    <span class="ocr-status" id="ocrStatus" hidden></span>
+  </header>
+
+  <nav class="mode-tabs popup-tabs" role="tablist">
+    <button class="mode-tab is-active" data-mode="mask" role="tab" aria-selected="true" type="button">Maskele</button>
+    <button class="mode-tab" data-mode="unmask" role="tab" aria-selected="false" type="button">Geri Aç</button>
+    <button class="mode-tab" data-mode="settings" role="tab" aria-selected="false" type="button">Ayarlar</button>
+  </nav>
+
+  <section class="mode-panel" data-panel="mask">
+    <div class="workspace-hint">Aktif proje: <strong id="popWorkspaceName" translate="no">Genel</strong></div>
+    <textarea id="popMaskInput" spellcheck="false" placeholder="Metin/kod yapıştırın ya da bir ekran görüntüsünü Ctrl+V ile buraya yapıştırın…"></textarea>
+    <button class="pick-btn popup-pick" id="popAddSelection" type="button">Seçili metni maskeye ekle</button>
+    <button class="run-btn mask-run popup-primary" id="popMaskBtn" type="button">Maskele, kontrol et ve kopyala</button>
+    <div class="summary-chips" id="popSummary"></div>
+    <div class="popup-output-wrap" id="popOutputWrap" translate="no" hidden>
+      <div class="popup-output-head">
+        <label for="popMaskOutput">Maskeli çıktı</label>
+        <button class="copy-btn" id="popCopyOutput" type="button">Kopyala</button>
+      </div>
+      <textarea id="popMaskOutput" readonly spellcheck="false"></textarea>
+    </div>
+  </section>
+
+  <section class="mode-panel" data-panel="unmask" hidden>
+    <textarea id="popUnmaskInput" spellcheck="false" placeholder="AI'nın verdiği, placeholder içeren cevabı buraya yapıştırın…"></textarea>
+    <button class="run-btn unmask-run popup-primary" id="popUnmaskBtn" type="button">Geri Aç ve Kopyala</button>
+    <div class="popup-output-wrap" id="popUnmaskOutputWrap" translate="no" hidden>
+      <div class="popup-output-head">
+        <label for="popUnmaskOutput">Son hâli</label>
+        <button class="copy-btn" id="popCopyUnmaskOutput" type="button">Kopyala</button>
+      </div>
+      <textarea id="popUnmaskOutput" readonly spellcheck="false"></textarea>
+    </div>
+  </section>
+
+    <section class="mode-panel" data-panel="settings" hidden>
+    <div class="settings-group">
+      <h3 class="settings-title">Siteler</h3>
+      <p class="settings-hint">Hangi AI sitelerinde butonların aktif olacağını yönetin. Kapattığınız sitede buton ve uyarılar açık sekmelerde de hemen kapanır. Site erişim izni uzantının kurulum izinlerinin parçasıdır; buradan kaldırılamaz.</p>
+      <div class="site-toggle-list">
+        <label class="site-toggle-item">
+          <input type="checkbox" id="permChatgpt" checked data-domain="chatgpt.com" data-origins="https://chatgpt.com/*,https://chat.openai.com/*">
+          <span>ChatGPT (chatgpt.com)</span>
+        </label>
+        <label class="site-toggle-item">
+          <input type="checkbox" id="permClaude" checked data-domain="claude.ai" data-origins="https://claude.ai/*">
+          <span>Claude (claude.ai)</span>
+        </label>
+        <label class="site-toggle-item">
+          <input type="checkbox" id="permGemini" checked data-domain="gemini.google.com" data-origins="https://gemini.google.com/*">
+          <span>Google Gemini (gemini.google.com)</span>
+        </label>
+        <label class="site-toggle-item">
+          <input type="checkbox" id="permAistudio" checked data-domain="aistudio.google.com" data-origins="https://aistudio.google.com/*">
+          <span>Google AI Studio (aistudio.google.com)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3 class="settings-title">Görünüm</h3>
+      <p class="settings-hint">Masko'nun bütün sayfaları için geçerlidir. "Sistem" bilgisayarın açık/koyu ayarını izler.</p>
+      <div class="tema-secici" role="radiogroup" aria-label="Görünüm" data-tema-secici>
+        <button type="button" role="radio" data-tema="system">Sistem</button>
+        <button type="button" role="radio" data-tema="light">Açık</button>
+        <button type="button" role="radio" data-tema="dark">Koyu</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3 class="settings-title">Dil</h3>
+      <p class="settings-hint">Arayüz dili. Masko'nun bütün sayfaları için geçerlidir.</p>
+      <div class="tema-secici dil-secici" role="radiogroup" aria-label="Dil / Language" data-dil-secici translate="no">
+        <button type="button" role="radio" data-dil="tr" lang="tr">Türkçe</button>
+        <button type="button" role="radio" data-dil="en" lang="en">English</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3 class="settings-title">Yapıştırırken maskele</h3>
+      <p class="settings-hint">Hassas veri içeren bir metni AI sitesine yapıştırdığınızda (Ctrl+V ya da sürükle-bırak) metin siteye ulaşmadan tarayıcınızda maskelenir; kutuya yalnızca [TCKN_1] gibi maskeli hâli yazılır. Site ham veriyi hiçbir aşamada görmez. Klavyeyle yazdığınız veri ise yazarken sitenin koduna görünür; onun için aşağıdaki gönderim uyarısı devrededir.</p>
+      <label class="site-toggle-item">
+        <input type="checkbox" id="pasteGuardToggle" checked>
+        <span>Yapıştırılan hassas veriyi otomatik maskele</span>
+      </label>
+    </div>
+
+    <div class="settings-group">
+      <h3 class="settings-title">Gönderim öncesi uyarı</h3>
+      <p class="settings-hint">Yazarken kutuda maskelenmemiş TCKN, kart, şifre gibi hassas veriler kaldığında düğmede bir uyarı işareti gösterir. Böyle bir metinle Enter'a veya Gönder'e bastığınızda ilk basışı durdurup uyarır; aynı metinle tekrar basarsanız mesaj olduğu gibi gönderilir.</p>
+      <label class="site-toggle-item">
+        <input type="checkbox" id="preflightToggle" checked>
+        <span>Gönderim öncesi uyarıyı etkinleştir</span>
+      </label>
+    </div>
+    <div id="settingsFeedback" class="settings-feedback" hidden></div>
+  </section>
+
+  <button class="popup-full-link" id="openFull" type="button">Tam aracı aç: sözlük, dosya işleri, Veri Tezgâhı</button>
+</div>
+
+<script src="tesseract/tesseract.min.js"></script>
+<script src="type-catalog.js"></script>
+<script src="mask-engine.js"></script>
+<script src="glossary-store.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

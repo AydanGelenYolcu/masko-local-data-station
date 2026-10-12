@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masko — Hücre Düzeyinde Tablo Karşılaştırıcı (Tabular Diff)</title>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="diff-panel.css">
+</head>
+<body>
+  <div class="diff-app">
+    <header class="diff-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <h1>Tablo karşılaştırma</h1>
+      </div>
+      <div style="font-size:var(--fs-xs); color:var(--ink-muted);">
+        Anahtar sütuna göre eklenen, silinen ve değişen hücreleri bulur; dosyalar tarayıcıda kalır.
+      </div>
+    </header>
+
+    <!-- 1. İKİLİ DOSYA YÜKLEME KARTI -->
+    <section class="card" id="inputCard">
+      <div class="dual-drop-grid">
+        <!-- TABLO A (ESKİ / REFERANS) -->
+        <div class="drop-card" id="dropCardA" tabindex="0" role="button">
+          <h3 id="labelCardA">1. Tabloyu Seç (Tablo A - Eski / Referans)</h3>
+          <p class="drop-card-sub" id="subCardA">Önceki ay, orijinal liste veya taban veri (.xlsx, .csv)</p>
+          <input type="file" id="fileInputA" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+
+        <!-- TABLO B (YENİ / GÜNCEL) -->
+        <div class="drop-card" id="dropCardB" tabindex="0" role="button">
+          <h3 id="labelCardB">2. Tabloyu Seç (Tablo B - Yeni / Güncel)</h3>
+          <p class="drop-card-sub" id="subCardB">Güncel ay, yeni revizyon veya ERP çıktısı (.xlsx, .csv)</p>
+          <input type="file" id="fileInputB" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+      </div>
+
+      <!-- 2. ANAHTAR SÜTUN VE KIYASLAMA AYARLARI -->
+      <div class="config-grid" id="configSection" style="display:none;">
+        <div class="key-selector-box">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:var(--fs-sm);">Anahtar sütun(lar)ı seçin</strong>
+            <span style="font-size:var(--fs-xs); color:var(--text-muted);">Satırları eşleştirecek tekil kimlik (Örn: Sicil No, Sipariş No)</span>
+          </div>
+          <div class="key-selector-list" id="keySelectorList" translate="no"></div>
+        </div>
+
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; font-size:var(--fs-sm);">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="chkIgnoreCase">
+            <span>Büyük / Küçük Harf Duyarsız Karşılaştır</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="chkTrim" checked>
+            <span>Hücre Başı/Sonu Boşluklarını Yok Say (Trim)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;" title="İki taraf da sayı olarak okunabiliyorsa 5 = 5.0 kabul edilir. 1.250 gibi belirsiz biçimler ve 007 gibi baştaki sıfırlı kodlar metin olarak kıyaslanır.">
+            <input type="checkbox" id="chkNumeric" checked>
+            <span>Sayısal Denklik (5 = 5.0)</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SONUÇ VE FARK GÖRÜNÜMÜ KARTI -->
+    <section class="card" id="resultSection" style="display:none; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div class="stats-ribbon">
+          <div class="stat-pill added" id="statAdded">+0 Yeni</div>
+          <div class="stat-pill deleted" id="statDeleted">-0 Silinen</div>
+          <div class="stat-pill modified" id="statModified">~0 Değişen</div>
+          <div class="stat-pill unchanged" id="statUnchanged">=0 Değişmeyen</div>
+          <div class="stat-pill duplicate" id="statDuplicate" style="display:none;">0 tekrarlı anahtar</div>
+          <div class="stat-pill blank-key" id="statBlankKey" style="display:none;">∅ Boş Anahtar</div>
+          <div style="font-size:var(--fs-xs); color:var(--ink-muted); font-weight:600;" id="statCells">Toplam 0 hücre değişti</div>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-success" id="btnExportXlsx">Excel denetim raporu (.xlsx)</button>
+          <button class="btn btn-secondary" id="btnExportCsv">Farkları CSV indir</button>
+        </div>
+      </div>
+
+      <!-- FİLTRELEME SEKMELERİ -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div class="filter-tabs">
+          <button class="filter-btn active" data-filter="all">Tüm Satırlar</button>
+          <button class="filter-btn" data-filter="diff_only">Sadece Farklar (~ / + / -)</button>
+          <button class="filter-btn" data-filter="modified">Değişenler (~)</button>
+          <button class="filter-btn" data-filter="added">Eklenenler (+)</button>
+          <button class="filter-btn" data-filter="deleted">Silinenler (-)</button>
+          <button class="filter-btn" data-filter="duplicate">Tekrarlı anahtar</button>
+          <button class="filter-btn" data-filter="blank_key">Boş Anahtar (∅)</button>
+        </div>
+        <div style="font-size:var(--fs-xs); color:var(--text-muted);">
+          İlk 250 satır gösterilmektedir. Tam sonuç için Excel Audit raporunu indirin.
+        </div>
+      </div>
+
+      <!-- DİNAMİK FARK TABLOSU -->
+      <div class="table-diff-wrap" id="tableDiffWrap"></div>
+    </section>
+  </div>
+
+  <script src="../vendor/xlsx.full.min.js"></script>
+  <script src="../csv-io.js"></script>
+  <script src="diff-engine.js"></script>
+  <script src="diff-ui.js"></script>
+</body>
+</html>

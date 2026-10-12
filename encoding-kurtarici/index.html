@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masko — Karakter onarma</title>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="encoding-panel.css">
+</head>
+<body>
+  <div class="encoding-app">
+    <header class="encoding-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <h1>Bozuk karakter onarma <span class="encoding-badge">Windows-1254 → UTF-8</span></h1>
+      </div>
+      <div style="font-size:var(--fs-xs); color:var(--ink-muted);">
+        SAP, Logo, Mikro gibi ERP çıktılarındaki bozuk Türkçe karakterleri düzeltir.
+      </div>
+    </header>
+
+    <!-- 1. DOSYA YÜKLEME KARTI -->
+    <section class="card" id="dropCard">
+      <div class="drop-card" id="dropZone">
+        <h3 id="labelFileName">Bozuk CSV, TXT veya LOG Dosyanızı Buraya Bırakın</h3>
+        <p class="drop-card-sub" id="labelFileMeta">SAP, Logo, Mikro, Netsis vb. ERP'lerden indirilen Türkçe karakteri bozuk metinler (.csv, .txt, .log)</p>
+        <input type="file" id="fileInput" accept=".csv,.txt,.tsv,.log,.dat" hidden>
+      </div>
+    </section>
+
+    <!-- 2. ANALİZ VE ÖNİZLEME (Dosya yüklenince açılır) -->
+    <section class="card" id="resultSection" style="display:none; flex-direction:column; gap:14px;">
+      <div class="analysis-ribbon">
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <div class="status-indicator">
+            <span class="status-dot fixed"></span>
+            <span id="statusDesc">Windows-1254 (Klasik Türkçe ERP Formatı)</span>
+          </div>
+          <span style="font-size:var(--fs-xs); color:var(--text-muted);" id="statusStats">
+            0 bozuk karakter onarıldı
+          </span>
+        </div>
+
+        <div>
+          <button class="btn btn-success" id="btnDownloadUtf8">
+            Onarılmış dosyayı indir (UTF-8, Excel uyumlu)
+          </button>
+        </div>
+      </div>
+
+      <!-- ý/þ/ð şüphesi: otomatik uygulanmaz, kullanıcı açıkça seçer -->
+      <label class="single-letter-note" id="singleLetterRow" hidden>
+        <input type="checkbox" id="singleLetterFix">
+        <span id="singleLetterText">ý / þ / ð harfleri ı / ş / ğ olarak düzeltilsin (Windows-1252 karışıklığı). Metinde Çekçe, İzlandaca vb. gerçek adlar varsa işaretlemeyin.</span>
+      </label>
+
+      <!-- YAN YANA ÖNCE / SONRA ÖNİZLEME -->
+      <div class="side-by-side-grid">
+        <div class="preview-pane">
+          <div class="preview-pane-header">
+            <span>Bozuk görünüm (dosyanın şimdiki hâli)</span>
+            <span>Orijinal</span>
+          </div>
+          <div class="preview-code-box" id="codeBefore" translate="no"></div>
+        </div>
+
+        <div class="preview-pane fixed-pane">
+          <div class="preview-pane-header">
+            <span>Onarılmış görünüm</span>
+            <span>UTF-8 BOM</span>
+          </div>
+          <div class="preview-code-box" id="codeAfter" translate="no"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="encoding-engine.js"></script>
+  <script src="encoding-ui.js"></script>
+</body>
+</html>

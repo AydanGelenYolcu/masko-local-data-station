@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masko — Çevrimdışı Güvenli PDF İstasyonu</title>
+  <link rel="icon" type="image/png" href="../icons/icon-32.png">
+  <script src="../tema.js"></script>
+  <script src="../dil/en.js"></script>
+  <script src="../dil.js"></script>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="pdf-panel.css">
+</head>
+<body>
+  <div class="pdf-app">
+    <header class="pdf-header">
+      <div class="pdf-title-group">
+        <h1>PDF</h1>
+      </div>
+      <div class="pdf-security-pill">
+        <span class="dot" aria-hidden="true"></span>
+        Dosyalarınız tarayıcınızdan çıkmaz; hiçbir sunucuya yüklenmez.
+      </div>
+    </header>
+
+    <nav class="pdf-nav-tabs" role="tablist" aria-label="PDF araçları">
+      <button class="pdf-tab-btn is-active" id="tabOrganize" data-tab="organize" type="button">Düzenle ve böl</button>
+      <button class="pdf-tab-btn" id="tabMerge" data-tab="merge" type="button">Birleştir</button>
+      <button class="pdf-tab-btn" data-tab="images" type="button">Resimden PDF</button>
+      <button class="pdf-tab-btn" data-tab="numbers" type="button">Sayfa numarası</button>
+      <button class="pdf-tab-btn" data-tab="watermark" type="button">Filigran</button>
+      <button class="pdf-tab-btn" data-tab="crop" type="button">Kırp</button>
+      <button class="pdf-tab-btn" data-tab="form" type="button">Form doldur</button>
+      <button class="pdf-tab-btn" data-tab="toimage" type="button">PDF'den resim</button>
+      <button class="pdf-tab-btn" data-tab="redact" type="button">Karart</button>
+      <button class="pdf-tab-btn" data-tab="ocr" type="button">OCR</button>
+      <button class="pdf-tab-btn" data-tab="security" type="button">Şifre</button>
+    </nav>
+
+    <!-- DÜZENLE VE BÖL -->
+    <main id="panelOrganize" class="pdf-panel" data-panel="organize">
+      <div class="dropzone" id="organizeDropzone" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>İşlenecek PDF dosyasını buraya sürükleyin</h2>
+        <p class="dropzone-sub">veya dosya seçmek için tıklayın (.pdf)</p>
+        <input type="file" id="organizeFileInput" accept=".pdf" hidden>
+      </div>
+
+      <section class="pdf-card" id="organizeWorkspace" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left">
+            <strong id="organizeFileName" translate="no">belge.pdf</strong>
+            <span class="pdf-file-badge" id="organizePageCount">0 sayfa</span>
+            <button class="btn" id="btnChangeOrganizeFile" type="button">Başka dosya seç</button>
+          </div>
+          <div class="pdf-controls-right">
+            <button class="btn" id="btnRotateAllRight" type="button">↻ Tümünü 90° döndür</button>
+            <button class="btn" id="btnResetPages" type="button">Değişiklikleri sıfırla</button>
+          </div>
+        </div>
+
+        <div class="pdf-hizli-satir">
+          <label for="pageRangeInput">Sayfa aralığı çıkar:</label>
+          <input type="text" class="input-text" id="pageRangeInput" placeholder="Örn: 1-3, 5, 8-10">
+          <button class="btn btn-primary" id="btnExtractRange" type="button">Seçili sayfaları indir</button>
+          <button class="btn" id="btnSplitSinglePages" type="button">Her sayfayı ayrı indir</button>
+        </div>
+        <p class="pdf-ipucu">Sayfaları sürükleyerek sıralayın. "Boş ekle" o sayfanın arkasına boş bir sayfa koyar.</p>
+
+        <div class="pdf-page-grid" id="pagesGrid"></div>
+
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnExportOrganizedPdf" type="button">Düzenlenmiş PDF'i indir</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- BİRLEŞTİR -->
+    <main id="panelMerge" class="pdf-panel" data-panel="merge" hidden>
+      <div class="dropzone" id="mergeDropzone" tabindex="0" role="button" aria-label="Birleştirilecek PDF'leri seçin veya sürükleyin">
+        <h2>Birleştirilecek PDF dosyalarını buraya sürükleyin</h2>
+        <p class="dropzone-sub">Birden fazla PDF seçebilirsiniz (.pdf)</p>
+        <input type="file" id="mergeFileInput" accept=".pdf" multiple hidden>
+      </div>
+
+      <section class="pdf-card" id="mergeWorkspace" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left">
+            <strong id="mergeFileCount">0 dosya eklendi</strong>
+            <button class="btn" id="btnAddMoreMergeFiles" type="button">+ Dosya ekle</button>
+          </div>
+          <div class="pdf-controls-right">
+            <button class="btn btn-danger" id="btnClearMergeList" type="button">Listeyi temizle</button>
+          </div>
+        </div>
+
+        <div class="pdf-file-list" id="mergeFileList" translate="no"></div>
+
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnExecuteMerge" type="button">Tümünü tek PDF olarak birleştir ve indir</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- RESİMDEN PDF -->
+    <main class="pdf-panel" data-panel="images" hidden>
+      <div class="dropzone" id="imgDropzone" tabindex="0" role="button" aria-label="Görselleri seçin veya sürükleyin">
+        <h2>Görselleri buraya sürükleyin</h2>
+        <p class="dropzone-sub">JPG, PNG, WebP, GIF, BMP — her görsel bir sayfa olur</p>
+        <input type="file" id="imgFileInput" accept="image/*" multiple hidden>
+      </div>
+      <section class="pdf-card" id="imgWorkspace" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left">
+            <strong id="imgCount">0 görsel</strong>
+            <button class="btn" id="btnImgAdd" type="button">+ Görsel ekle</button>
+          </div>
+          <div class="pdf-controls-right">
+            <button class="btn btn-danger" id="btnImgClear" type="button">Listeyi temizle</button>
+          </div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Sayfa boyutu
+            <select id="imgPageSize" class="input-text">
+              <option value="resim">Görselin kendi boyutu</option>
+              <option value="A4" selected>A4</option>
+              <option value="Letter">Letter</option>
+            </select>
+          </label>
+          <label>Yön
+            <select id="imgOrientation" class="input-text">
+              <option value="otomatik" selected>Görsele göre</option>
+              <option value="dikey">Dikey</option>
+              <option value="yatay">Yatay</option>
+            </select>
+          </label>
+          <label>Kenar boşluğu
+            <select id="imgMargin" class="input-text">
+              <option value="0">Yok</option>
+              <option value="20" selected>Küçük</option>
+              <option value="40">Büyük</option>
+            </select>
+          </label>
+        </div>
+        <div class="pdf-gorsel-listesi" id="imgList" translate="no"></div>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnImgExport" type="button">PDF oluştur ve indir</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- TEK DOSYALIK ARAÇLAR: numara, filigran, kırp, form -->
+    <main class="pdf-panel" data-panel="numbers" hidden>
+      <div class="dropzone" data-tekdosya="numbers" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Sayfa numarası eklenecek PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">veya dosya seçmek için tıklayın (.pdf)</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="numbers" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Konum
+            <select id="numPosition" class="input-text">
+              <option value="alt-orta" selected>Alt orta</option>
+              <option value="alt-sag">Alt sağ</option>
+              <option value="alt-sol">Alt sol</option>
+              <option value="ust-orta">Üst orta</option>
+              <option value="ust-sag">Üst sağ</option>
+              <option value="ust-sol">Üst sol</option>
+            </select>
+          </label>
+          <label>Biçim
+            <select id="numFormat" class="input-text">
+              <option value="{n}" selected>1</option>
+              <option value="{n} / {toplam}">1 / 10</option>
+              <option value="Sayfa {n}">Sayfa 1</option>
+              <option value="Sayfa {n} / {toplam}">Sayfa 1 / 10</option>
+              <option value="{n}. sayfa">1. sayfa</option>
+              <option value="- {n} -">- 1 -</option>
+              <option value="ozel">Özel…</option>
+            </select>
+          </label>
+          <label id="numCustomWrap" hidden>Özel biçim
+            <input type="text" id="numCustom" class="input-text" maxlength="80" placeholder="Örn: Ek-2 · Sayfa {n} / {toplam}">
+          </label>
+          <label>İlk numara
+            <input type="number" id="numStart" class="input-text" value="1" min="0" max="99999">
+          </label>
+          <label>Yazı boyutu
+            <select id="numSize" class="input-text">
+              <option value="9">Küçük</option>
+              <option value="11" selected>Orta</option>
+              <option value="14">Büyük</option>
+            </select>
+          </label>
+          <label>Kenardan uzaklık (mm)
+            <input type="number" id="numMargin" class="input-text" value="10" min="0" max="80">
+          </label>
+          <label class="pdf-onay"><input type="checkbox" id="numSkipFirst"> Kapak sayfasını numaralama</label>
+        </div>
+        <p class="pdf-ipucu" id="numCustomHint" hidden>{n} sayfa numarası, {toplam} sayfa sayısı yerine geçer. Türkçe harfler yazılabilir; Kiril, Arap harfi ve emoji yazılamaz.</p>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnNumExport" type="button">Numaraları ekle ve indir</button>
+        </div>
+      </section>
+    </main>
+
+    <main class="pdf-panel" data-panel="watermark" hidden>
+      <div class="dropzone" data-tekdosya="watermark" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Filigran eklenecek PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">veya dosya seçmek için tıklayın (.pdf)</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="watermark" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Tür
+            <select id="wmType" class="input-text">
+              <option value="metin" selected>Metin</option>
+              <option value="gorsel">Görsel (logo, mühür)</option>
+            </select>
+          </label>
+          <label data-wm="metin">Metin
+            <input type="text" id="wmText" class="input-text" value="GİZLİ" maxlength="80">
+          </label>
+          <label data-wm="metin">Renk
+            <input type="color" id="wmColor" class="input-renk" value="#b23b2a">
+          </label>
+          <label data-wm="gorsel" hidden>Görsel
+            <input type="file" id="wmImage" accept="image/*" class="input-text">
+          </label>
+          <label>Saydamlık
+            <input type="range" id="wmOpacity" min="5" max="100" value="25"> <span id="wmOpacityText">%25</span>
+          </label>
+          <label>Açı
+            <select id="wmAngle" class="input-text">
+              <option value="0">Yatay</option>
+              <option value="45" selected>Çapraz (45°)</option>
+              <option value="-45">Ters çapraz (-45°)</option>
+              <option value="90">Dikey</option>
+            </select>
+          </label>
+          <label>Boyut
+            <select id="wmScale" class="input-text">
+              <option value="0.3">Küçük</option>
+              <option value="0.6" selected>Orta</option>
+              <option value="0.9">Büyük</option>
+            </select>
+          </label>
+          <label>Yerleşim
+            <select id="wmLayout" class="input-text">
+              <option value="orta" selected>Ortada bir kez</option>
+              <option value="dose">Sayfayı kapla</option>
+            </select>
+          </label>
+          <label>Sayfalar (boşsa hepsi)
+            <input type="text" id="wmPages" class="input-text" placeholder="Örn: 1-3, 5">
+          </label>
+        </div>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnWmExport" type="button">Filigranı ekle ve indir</button>
+        </div>
+      </section>
+    </main>
+
+    <main class="pdf-panel" data-panel="crop" hidden>
+      <div class="dropzone" data-tekdosya="crop" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Kırpılacak PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">veya dosya seçmek için tıklayın (.pdf)</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="crop" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <p class="pdf-ipucu" id="cropInfo"></p>
+        <div class="pdf-kirp-onizleme" id="cropPreview" hidden>
+          <canvas id="cropCanvas"></canvas>
+          <div class="pdf-kirp-maske" id="cropMask"></div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Üstten (mm) <input type="number" id="cropTop" class="input-text" value="0" min="0" max="500"></label>
+          <label>Alttan (mm) <input type="number" id="cropBottom" class="input-text" value="0" min="0" max="500"></label>
+          <label>Soldan (mm) <input type="number" id="cropLeft" class="input-text" value="0" min="0" max="500"></label>
+          <label>Sağdan (mm) <input type="number" id="cropRight" class="input-text" value="0" min="0" max="500"></label>
+          <label>Sayfalar (boşsa hepsi)
+            <input type="text" id="cropPages" class="input-text" placeholder="Örn: 1-3, 5">
+          </label>
+        </div>
+        <p class="pdf-ipucu">Kırpılan kenar gizlenir, silinmez: içerik dosyada kalır. Gizli bilgiyi kaldırmak için kırpma yeterli değildir.</p>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnCropExport" type="button">Kırp ve indir</button>
+        </div>
+      </section>
+    </main>
+
+    <main class="pdf-panel" data-panel="form" hidden>
+      <div class="dropzone" data-tekdosya="form" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Doldurulacak PDF formunu buraya sürükleyin</h2>
+        <p class="dropzone-sub">veya dosya seçmek için tıklayın (.pdf)</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="form" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <div class="pdf-form-alanlari" id="formFields"></div>
+        <label class="pdf-onay"><input type="checkbox" id="formFlatten"> Düzleştir (alanlar sabit metne çevrilir, artık değiştirilemez)</label>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnFormExport" type="button">Doldurulmuş PDF'i indir</button>
+        </div>
+      </section>
+    </main>
+    <!-- PDF'DEN RESİM -->
+    <main class="pdf-panel" data-panel="toimage" hidden>
+      <div class="dropzone" data-tekdosya="toimage" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Resme çevrilecek PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">Her sayfa ayrı bir görsel olur; birden çok sayfa ZIP olarak iner</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="toimage" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Biçim
+            <select id="imgOutFormat" class="input-text">
+              <option value="image/jpeg" selected>JPG (küçük dosya)</option>
+              <option value="image/png">PNG (kayıpsız)</option>
+            </select>
+          </label>
+          <label>Çözünürlük
+            <select id="imgOutDpi" class="input-text">
+              <option value="72">Ekran (72 DPI)</option>
+              <option value="150" selected>Orta (150 DPI)</option>
+              <option value="300">Baskı (300 DPI)</option>
+            </select>
+          </label>
+          <label>Sayfalar (boşsa hepsi)
+            <input type="text" id="imgOutPages" class="input-text" placeholder="Örn: 1-3, 5">
+          </label>
+        </div>
+        <p class="pdf-ipucu" id="imgOutStatus" aria-live="polite"></p>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnImgOutExport" type="button">Görsellere çevir ve indir</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- KALICI KARARTMA -->
+    <main class="pdf-panel" data-panel="redact" hidden>
+      <div class="dropzone" data-tekdosya="redact" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Karartılacak PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">Karartılan bilgi dosyadan tamamen silinir; kopyalanamaz, aranamaz</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="redact" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <div class="pdf-hizli-satir">
+          <button class="btn" id="btnRedactAuto" type="button">Hassas verileri bul</button>
+          <input type="text" class="input-text" id="redactTerms" placeholder="Karartılacak kelimeler (virgülle)" title="Büyük/küçük harf ve ş-s, ı-i, ğ-g, ç-c, ö-o, ü-u farkı gözetilmez">
+          <button class="btn" id="btnRedactSearch" type="button">Ara ve işaretle</button>
+          <span class="pdf-ipucu" id="redactSummary" aria-live="polite"></span>
+        </div>
+        <div class="pdf-karart-gezinme">
+          <button class="btn" id="btnRedactPrev" type="button">◀ Önceki</button>
+          <span id="redactPageLabel">Sayfa 1 / 1</span>
+          <button class="btn" id="btnRedactNext" type="button">Sonraki ▶</button>
+          <button class="btn btn-danger" id="btnRedactClearPage" type="button">Bu sayfadaki kutuları sil</button>
+        </div>
+        <p class="pdf-ipucu">Fareyle sürükleyerek kutu çizin; bir kutuya tıklayınca silinir. Otomatik bulunanları sayfa sayfa kontrol edin. Kelime aramasında büyük/küçük harf ve ş-s, ı-i gibi farklar gözetilmez: "ayse" yazınca "AYŞE" de bulunur.</p>
+        <div class="pdf-karart-sahne" id="redactStage">
+          <canvas id="redactCanvas"></canvas>
+          <div class="pdf-karart-katman" id="redactLayer"></div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Çözünürlük
+            <select id="redactDpi" class="input-text">
+              <option value="150">Orta (150 DPI)</option>
+              <option value="200" selected>İyi (200 DPI)</option>
+              <option value="300">Baskı (300 DPI)</option>
+            </select>
+          </label>
+          <label class="pdf-onay"><input type="checkbox" id="redactAllPages"> Bütün sayfaları resme çevir (hiçbir sayfada seçilebilir metin kalmaz)</label>
+        </div>
+        <p class="pdf-ipucu">Kutu içeren sayfalar resme çevrilir: o sayfalarda metin seçilemez ve aranamaz, dosya büyüyebilir. Belgenin yazar, başlık ve yer imi bilgileri yeni dosyaya taşınmaz.</p>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnRedactExport" type="button">Karartılmış PDF'i indir</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- OCR -->
+    <main class="pdf-panel" data-panel="ocr" hidden>
+      <div class="dropzone" data-tekdosya="ocr" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Taranmış PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">Sayfalardaki yazı tanınır; metni seçilebilen ve aranabilen bir PDF iner</p>
+        <input type="file" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" data-calisma="ocr" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong data-dosya-adi translate="no"></strong><span class="pdf-file-badge" data-sayfa-sayisi></span></div>
+          <div class="pdf-controls-right"><button class="btn" data-dosya-degistir type="button">Başka dosya seç</button></div>
+        </div>
+        <div class="pdf-secenekler">
+          <label>Çözünürlük
+            <select id="ocrDpi" class="input-text">
+              <option value="200" selected>Hızlı (200 DPI)</option>
+              <option value="300">Hassas (300 DPI)</option>
+            </select>
+          </label>
+          <label>Sayfalar (boşsa hepsi)
+            <input type="text" id="ocrPages" class="input-text" placeholder="Örn: 1-3, 5">
+          </label>
+        </div>
+        <p class="pdf-ipucu">Türkçe ve İngilizce tanınır. Sayfalar tarayıcınızda tek tek okunur; sayfa başına birkaç saniye sürebilir. Çıktıda her sayfa görüntü olarak kalır, üstüne görünmez metin katmanı eklenir.</p>
+        <p class="pdf-ipucu" id="ocrStatus" aria-live="polite"></p>
+        <div class="pdf-alt-eylem">
+          <button class="btn btn-primary btn-buyuk" id="btnOcrExport" type="button">Metni tanı ve aranabilir PDF'i indir</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ŞİFRE -->
+    <main class="pdf-panel" data-panel="security" hidden>
+      <div class="dropzone" id="secDropzone" tabindex="0" role="button" aria-label="PDF seçin veya sürükleyin">
+        <h2>Şifrelenecek ya da şifresi kaldırılacak PDF'i buraya sürükleyin</h2>
+        <p class="dropzone-sub">Şifreli dosyada parolayla şifre kaldırılır; şifresiz dosyaya parola konur</p>
+        <input type="file" id="secFileInput" accept=".pdf" hidden>
+      </div>
+      <section class="pdf-card" id="secWorkspace" hidden>
+        <div class="pdf-controls-bar">
+          <div class="pdf-controls-left"><strong id="secFileName" translate="no"></strong><span class="pdf-file-badge" id="secState"></span></div>
+          <div class="pdf-controls-right"><button class="btn" id="btnSecChange" type="button">Başka dosya seç</button></div>
+        </div>
+        <div id="secProtect" hidden>
+          <div class="pdf-secenekler">
+            <label>Açılış parolası <input type="password" id="secPass" class="input-text" autocomplete="new-password"></label>
+            <label>Parola tekrar <input type="password" id="secPass2" class="input-text" autocomplete="new-password"></label>
+          </div>
+          <p class="pdf-ipucu">Parolayı açan kişinin yapabilecekleri:</p>
+          <div class="pdf-secenekler">
+            <label class="pdf-onay"><input type="checkbox" id="secPrint" checked> Yazdırabilsin</label>
+            <label class="pdf-onay"><input type="checkbox" id="secCopy" checked> Metin kopyalayabilsin</label>
+            <label class="pdf-onay"><input type="checkbox" id="secModify" checked> Değiştirebilsin</label>
+            <label class="pdf-onay"><input type="checkbox" id="secForms" checked> Form doldurabilsin</label>
+          </div>
+          <p class="pdf-ipucu">Kısıtlama seçerseniz kimsenin bilmediği rastgele bir yönetici parolası konur; kısıtlar sonradan kaldırılamaz. Şifreleme AES-256'dır. Parolayı unutursanız dosya açılamaz.</p>
+          <div class="pdf-alt-eylem">
+            <button class="btn btn-primary btn-buyuk" id="btnSecProtect" type="button">Şifrele ve indir</button>
+          </div>
+        </div>
+        <div id="secUnlock" hidden>
+          <div class="pdf-secenekler">
+            <label>Parola <input type="password" id="secUnlockPass" class="input-text" autocomplete="off"></label>
+          </div>
+          <p class="pdf-ipucu">Parolayı biliyorsanız şifre kaldırılır; parola kırılmaz. Yalnız izinleri kısıtlanmış (açılış parolası olmayan) dosyada parolayı boş bırakın.</p>
+          <div class="pdf-alt-eylem">
+            <button class="btn btn-primary btn-buyuk" id="btnSecUnlock" type="button">Şifreyi kaldır ve indir</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../vendor/pdf-lib.min.js"></script>
+  <!-- Karartmada hassas veri tespiti: maskelemeyle aynı aday hattı (MaskEngine.detectCandidates) -->
+  <script src="../checkdigits.js"></script>
+  <script src="../type-catalog.js"></script>
+  <script src="../intl-pack.js"></script>
+  <script src="../passo-pack.js"></script>
+  <script src="../mask-engine.js"></script>
+  <!-- OCR: maskeleme ekranıyla aynı yerel Tesseract -->
+  <script src="../tesseract/tesseract.min.js"></script>
+  <script src="pdf-engine.js"></script>
+  <script src="pdf-render.js"></script>
+  <script src="pdf-ui.js"></script>
+</body>
+</html>
