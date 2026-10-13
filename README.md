@@ -8,6 +8,8 @@ I started Masko because I wanted to use AI to explore and visualize data without
 
 **[Explore the 12 feature demos](https://aydangelenyolcu.github.io/masko-local-data-station/)**
 
+**[Install Masko from the Chrome Web Store](https://chromewebstore.google.com/detail/masko-%E2%80%94-yerel-veri-i%CC%87stas/jgaapkgfplklpgijlbmdemkmldagdkdc?hl=tr)**
+
 ## What you can do
 
 - Mask sensitive values in text before you choose to share a prompt with ChatGPT, Claude, Gemini, or Google AI Studio. Restore placeholders locally when needed.
@@ -42,3 +44,5 @@ This repository contains the production extension files, English and Turkish int
 ---
 
 **Türkçe:** Masko, yapay zekâyla veri analizi yaparken gerçek dosyayı paylaşma kaygısıyla başladı. Tablo yapısından sentetik örnek hazırlamaya ve günlük dosya işlerini tarayıcıda yapmaya yardımcı olur. Arayüz Türkçe ve İngilizcedir. Maskeleme geri açılabildiği için anonimleştirme sayılmaz; paylaşmadan önce çıktıları kontrol edin.
+
+**Chrome Web Store:** [Masko'yu Chrome'a ekleyin](https://chromewebstore.google.com/detail/masko-%E2%80%94-yerel-veri-i%CC%87stas/jgaapkgfplklpgijlbmdemkmldagdkdc?hl=tr)
